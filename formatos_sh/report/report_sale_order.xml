@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Reporte personalizado de Cotización / Orden de Venta -->
+    <template id="report_saleorder_document_inherit_sh" inherit_id="sale.report_saleorder_document">
+        <xpath expr="//t[@t-call='web.external_layout']" position="replace">
+            <t t-set="o" t-value="doc"/>
+            <t t-call="formatos_sh.internal_layout3">
+                <t t-set="titulo" t-value="''"/>
+                <t t-foreach="doc.order_line" t-as="line">
+                    <t t-if="line.display_type == 'line_note'">
+                        <t t-set="titulo" t-value="line.name"/>
+                    </t>
+                </t>
+                <div class="page" style="font-size: 13px !important;">
+                    <!-- Información del cliente -->
+                    <div name="cliente">
+                        <div>
+                            <strong><span class="h4" style="color: rgb(46, 93, 165);" t-field="doc.partner_id"/></strong>
+                        </div>
+                        <div>
+                            <span t-field="doc.partner_id.street"/>
+                        </div>
+                        <div>
+                            Cel: <span t-field="doc.partner_id.phone"/>
+                        </div>
+                        <div>
+                            <span t-field="doc.partner_id.email"/>
+                        </div>
+                    </div>
+
+                    <!-- Titulo y totales superiores -->
+                    <div name="totales" class="mb-3">
+                        <div class="row">
+                            <div class="col-8 text-center">
+                                <div class="text-light">.</div>
+                                <div>
+                                    <strong>
+                                        <span class="h5" style="color: rgb(46, 93, 165);" t-out="doc.get_uppercase_string(titulo)"/>
+                                    </strong>
+                                </div>
+                            </div>
+                            <div class="col-2 text-start ps-5 ms-1">
+                                <div><strong>Subtotal</strong></div>
+                                <div><strong>IVA 19%</strong></div>
+                                <div><strong>TOTAL</strong></div>
+                            </div>
+                            <div class="col-2 text-end">
+                                <div><strong><span t-field="doc.amount_untaxed"/></strong></div>
+                                <div style="border-bottom: 1px solid black;"><strong><span t-field="doc.amount_tax"/></strong></div>
+                                <div style="border-bottom: 1px solid black;"><strong><span t-field="doc.amount_total"/></strong></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de productos -->
+                    <div name="tabla_productos" style="border-bottom: 2px solid #FF4600;">
+                        <table class="table table-sm o_main_table">
+                            <thead style="display: table-row-group;background-color: rgb(210, 210, 210);">
+                                <tr style="border-top: 2px solid black; border-bottom: 2px solid black;">
+                                    <th class="text-start" style="width:9%;">Ref.</th>
+                                    <th class="text-start" style="width:46%;">Descripción</th>
+                                    <th class="text-start" style="width:15%;">Und.</th>
+                                    <th class="text-start" style="width:9%;">Cant.</th>
+                                    <th class="text-start" style="width:9%;">Vr. Unitario</th>
+                                    <th class="text-end" style="width:12%;">Vr. Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="titulo">
+                                    <tr>
+                                        <td colspan="4" style="color: #FF4600;">
+                                            <strong>
+                                                <span class="h5" style="border-bottom: 1px solid white;width:100%" t-out="titulo"/>
+                                            </strong>
+                                        </td>
+                                        <td class="text-end" style="color: #FF4600;">Vr. Capitulo</td>
+                                        <td class="text-end" style="color: #FF4600;">
+                                            <span t-field="doc.amount_untaxed"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                                <t t-set="current_section" t-value="False"/>
+                                <t t-foreach="doc.order_line" t-as="line">
+                                    <t t-if="line.display_type == 'line_section'">
+                                        <tr style="border-bottom: 1px solid black;">
+                                            <td colspan="6">
+                                                <strong><span t-field="line.name"/></strong>
+                                            </td>
+                                        </tr>
+                                        <t t-set="current_section" t-value="line.name"/>
+                                    </t>
+                                    <t t-if="line.display_type == 'line_note'">
+                                        <!-- Notas ya se muestran como título -->
+                                    </t>
+                                    <t t-if="not line.display_type">
+                                        <tr>
+                                            <td>
+                                                <span t-out="line.product_id.default_code or ''"/>
+                                            </td>
+                                            <td>
+                                                <span t-field="line.name"/>
+                                            </td>
+                                            <td>
+                                                <span t-field="line.product_uom_id"/>
+                                            </td>
+                                            <td>
+                                                <span t-field="line.product_uom_qty"/>
+                                            </td>
+                                            <td class="text-end">
+                                                <span t-field="line.price_unit"/>
+                                            </td>
+                                            <td class="text-end">
+                                                <span t-field="line.price_subtotal"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Términos y condiciones -->
+                    <div t-if="doc.note" class="mt-3" style="font-size: 11px;">
+                        <span t-field="doc.note"/>
+                    </div>
+
+                    <!-- Datos de validez y confirmación -->
+                    <div class="row mt-3" style="font-size: 11px;">
+                        <div class="col-6" t-if="doc.validity_date">
+                            <strong>Fecha de expiración: </strong>
+                            <span t-field="doc.validity_date"/>
+                        </div>
+                        <div class="col-6" t-if="doc.user_id">
+                            <strong>Comercial: </strong>
+                            <span t-field="doc.user_id"/>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+</odoo>
+<!-- vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4-->

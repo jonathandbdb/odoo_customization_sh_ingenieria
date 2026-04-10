@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Reporte personalizado de Remisión - Hereda del documento base de delivery -->
+    <template id="report_delivery_document_inherit_sh" inherit_id="stock.report_delivery_document">
+        <xpath expr="//t[@t-call='web.external_layout']" position="replace">
+            <t t-call="formatos_sh.internal_layout2">
+                <div class="page" style="font-size: 12px !important;">
+                    <!-- Sección superior: Proveedor/Cliente y Concepto -->
+                    <div class="row">
+                        <div class="col-6" style="padding: 0px 5px 0px 15px;">
+                            <table class="table table-sm" style="border: 1px solid black; width:100%;">
+                                <tr>
+                                    <th style="border: 1px solid black; width:25%;">
+                                        <strong>PROVEEDOR</strong>
+                                    </th>
+                                    <td style="border: 1px solid black; width:75%;">
+                                        <span t-field="o.partner_id"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th style="border: 1px solid black; width:25%;">
+                                        <strong>NIT</strong>
+                                    </th>
+                                    <td style="border-right: 1px solid black; border-top: 1px solid black; width:75%;">
+                                        <span t-field="o.partner_id.vat_num"/>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-6" style="padding: 0px 15px 0px 5px;">
+                            <table class="table table-sm" style="border: 1px solid black; width:100%;">
+                                <tr>
+                                    <th style="border: 1px solid black;">
+                                        <strong>POR CONCEPTO DE</strong>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <td style="border-bottom: 1px solid white;border-right: 1px solid black;border-left: 1px solid black;">
+                                        REMISIÓN
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Dirección, Ciudad, Teléfono y Observación -->
+                    <div class="row mb-1">
+                        <div class="col-6" style="padding: 0px 5px 0px 15px;">
+                            <table class="table table-sm" style="border: 1px solid black; width:100%;">
+                                <tr>
+                                    <th style="border-right: 1px solid black;border-left: 1px solid black;border-bottom: 1px solid black; width:33%;">
+                                        <strong>DIRECCIÓN</strong>
+                                    </th>
+                                    <th style="border-right: 1px solid black;border-left: 1px solid black;border-bottom: 1px solid black; width:33%;">
+                                        <strong>CIUDAD</strong>
+                                    </th>
+                                    <th style="border-right: 1px solid black;border-left: 1px solid black;border-bottom: 1px solid black; width:33%;">
+                                        <strong>TELÉFONO</strong>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <td style="border: 1px solid black;">
+                                        <span t-field="o.partner_id.street"/>
+                                    </td>
+                                    <td style="border: 1px solid black;">
+                                        <t t-if="o.partner_id.city_id">
+                                            <span t-field="o.partner_id.city_id"/>
+                                        </t>
+                                        <t t-else="">
+                                            <span t-field="o.partner_id.city"/>
+                                        </t>
+                                    </td>
+                                    <td style="border: 1px solid black;">
+                                        <span t-field="o.partner_id.phone"/>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-6" style="padding: 0px 15px 0px 5px;">
+                            <table class="table table-sm" style="border: 1px solid black; width:100%;">
+                                <tr>
+                                    <th style="border-top: 1px solid black;border-right: 1px solid black;border-left: 1px solid black;">
+                                        <strong>OBSERVACIÓN: </strong>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <t t-if="o.note">
+                                        <td style="border: 1px solid black;">
+                                            <span t-field="o.note"/>
+                                        </td>
+                                    </t>
+                                    <t t-else="">
+                                        <td style="border-top: 1px solid white;border-right: 1px solid black;border-left: 1px solid black;border-bottom: 1px solid black;">
+                                            <div class="text-light">-</div>
+                                            <div class="text-light">-</div>
+                                        </td>
+                                    </t>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Fechas y Elaborado por / Forma de pago -->
+                    <div class="row mb-1">
+                        <div class="col-6" style="padding: 0px 5px 0px 15px;">
+                            <table class="table table-sm" style="width:100%;">
+                                <tr class="text-center">
+                                    <th style="border: 1px solid black;">
+                                        <strong>FECHA DOCUMENTO</strong>
+                                    </th>
+                                    <th style="border: 1px solid black;">
+                                        <strong>FECHA DE VENCIMIENTO</strong>
+                                    </th>
+                                </tr>
+                                <tr class="text-center">
+                                    <td style="border: 1px solid black;">
+                                        <span t-out="datetime.date.today()" t-options='{"widget": "date"}'/>
+                                    </td>
+                                    <td style="border: 1px solid black;">
+                                        <span t-field="o.date_done" t-options='{"widget": "date"}'/>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-6" style="padding: 0px 15px 0px 5px;">
+                            <table class="table table-sm" style="border: 1px solid black; width:100%;">
+                                <tr>
+                                    <th class="text-center" style="border: 1px solid black;">
+                                        <strong>ELABORADO POR</strong>
+                                    </th>
+                                    <th class="text-center" style="border: 1px solid black;">
+                                        <strong>FORMA DE PAGO</strong>
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <td style="border: 1px solid black;">
+                                        <t t-if="o.purchase_id">
+                                            <span t-field="o.purchase_id.user_id.name"/>
+                                        </t>
+                                        <t t-elif="o.sale_id">
+                                            <span t-field="o.sale_id.user_id.name"/>
+                                        </t>
+                                        <t t-else="">
+                                            <span class="text-light">-</span>
+                                        </t>
+                                    </td>
+                                    <td style="border: 1px solid black;">
+                                        <t t-if="o.purchase_id">
+                                            <span t-field="o.purchase_id.payment_term_id"/>
+                                        </t>
+                                        <t t-elif="o.sale_id">
+                                            <span t-field="o.sale_id.payment_term_id"/>
+                                        </t>
+                                        <t t-else="">
+                                            <span class="text-light">-</span>
+                                        </t>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de líneas (productos, seriales, cantidad, unidad de medida) -->
+                    <div class="row">
+                        <div class="col-12">
+                            <table class="table table-sm table-borderless" style="border: 1px solid black;">
+                                <tr style="background-color: rgb(0, 0, 70);">
+                                    <th class="text-center text-light" style="border: 1px solid black;">
+                                        <strong>Descripción</strong>
+                                    </th>
+                                    <th class="text-center text-light" style="border: 1px solid black;">
+                                        <strong>Seriales</strong>
+                                    </th>
+                                    <th class="text-center text-light" style="border: 1px solid black;">
+                                        <strong>Cantidad</strong>
+                                    </th>
+                                    <th class="text-center text-light" style="border: 1px solid black;">
+                                        <strong>U. Medida</strong>
+                                    </th>
+                                </tr>
+                                <t t-set="move_lines" t-value="o.move_line_ids"/>
+                                <t t-if="move_lines">
+                                    <tr t-foreach="move_lines" t-as="line">
+                                        <td style="border-right: 1px solid black;border-left: 1px solid black;width:65%">
+                                            <span t-field="line.product_id"/>
+                                        </td>
+                                        <td class="text-center" style="border-right: 1px solid black;border-left: 1px solid black;width:15%">
+                                            <span t-field="line.lot_id"/>
+                                        </td>
+                                        <td class="text-center" style="border-right: 1px solid black;border-left: 1px solid black;width:10%">
+                                            <span t-field="line.quantity"/>
+                                        </td>
+                                        <td class="text-center" style="border-right: 1px solid black;border-left: 1px solid black;width:10%">
+                                            <span t-field="line.product_uom_id"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Firmas: Entrega y Recibe -->
+                    <div class="row mt-5 mb-2">
+                        <div class="col-6">
+                            <div>
+                                <div class="d-inline-block"><strong><span>Entrega: </span></strong></div>
+                                <div class="d-inline-flex"><span class="text-light border-bottom border-dark">_____________________________________</span></div>
+                            </div>
+                            <div><strong>Nombre: </strong></div>
+                            <div><strong>CC N°:</strong></div>
+                        </div>
+                        <div class="col-6">
+                            <div>
+                                <div class="d-inline-block"><strong><span>Recibe: </span></strong></div>
+                                <div class="d-inline-flex"><span class="text-light border-bottom border-dark">_____________________________________</span></div>
+                            </div>
+                            <div><strong>Nombre: </strong></div>
+                            <div><strong>CC N°:</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+</odoo>
+<!-- vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4-->

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Reporte personalizado de Factura de Proveedor (Vendor Bill) -->
+    <!-- Este reporte se muestra cuando el tipo de documento es in_invoice/in_refund -->
+    <!-- Se maneja dentro del template de report_invoice.xml usando condicional move_type -->
+    <!-- Este archivo define un reporte alternativo específico para facturas de proveedor -->
+
+    <template id="report_vendor_bill_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="lang" t-value="o.partner_id.lang"/>
+                <t t-call="formatos_sh.report_vendor_bill_content" t-lang="lang"/>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_vendor_bill_content">
+        <t t-call="formatos_sh.internal_layout_vendor_bill">
+            <t t-set="o" t-value="o.with_context(lang=lang)"/>
+            <div class="page" style="font-size: 12px !important;">
+                <!-- Datos del proveedor -->
+                <div class="row mb-3">
+                    <div class="col-6 offset-6 text-end" style="font-size: 11px;">
+                        <div><strong><span t-field="o.partner_id"/></strong></div>
+                        <div><span t-field="o.partner_id.street"/></div>
+                        <div>
+                            <t t-if="o.partner_id.city_id">
+                                <span t-field="o.partner_id.city_id.name"/>,
+                            </t>
+                            <t t-else="">
+                                <span t-field="o.partner_id.city"/>,
+                            </t>
+                            <span t-field="o.partner_id.state_id"/>
+                            <t t-if="o.partner_id.zip"> <span t-field="o.partner_id.zip"/></t>
+                        </div>
+                        <div><span t-field="o.partner_id.country_id"/></div>
+                        <div class="mt-1">NIT: <span t-field="o.partner_id.vat_num"/></div>
+                    </div>
+                </div>
+
+                <!-- Título del documento -->
+                <h2 class="mt-2" style="color: #5a8f5a;">
+                    Factura de proveedor <span t-field="o.name"/>
+                </h2>
+
+                <!-- Información: Fecha, Origen, Referencia -->
+                <div class="row mt-3 mb-3">
+                    <div class="col-3" t-if="o.invoice_date">
+                        <strong>Fecha:</strong><br/>
+                        <span t-field="o.invoice_date"/>
+                    </div>
+                    <div class="col-3" t-if="o.invoice_origin">
+                        <strong>Origen:</strong><br/>
+                        <span t-field="o.invoice_origin"/>
+                    </div>
+                    <div class="col-3" t-if="o.ref">
+                        <strong>Referencia:</strong><br/>
+                        <span t-field="o.ref"/>
+                    </div>
+                </div>
+
+                <!-- Tabla de líneas de factura -->
+                <table class="table table-sm" style="font-size: 11px;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #333;">
+                            <th class="text-center" style="width:8%;"><strong>SECUENCIA</strong></th>
+                            <th style="width:40%;"><strong>DESCRIPCIÓN</strong></th>
+                            <th class="text-center" style="width:12%;"><strong>CANTIDAD</strong></th>
+                            <th class="text-end" style="width:13%;"><strong>PRECIO<br/>UNITARIO</strong></th>
+                            <th class="text-start" style="width:12%;"><strong>IMPUESTOS</strong></th>
+                            <th class="text-end" style="width:15%;"><strong>IMPORTE</strong></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-set="seq_num" t-value="0"/>
+                        <t t-foreach="o.invoice_line_ids.sorted(key=lambda l: l.sequence)" t-as="line">
+                            <t t-if="line.display_type == 'product'">
+                                <t t-set="seq_num" t-value="seq_num + 10"/>
+                                <tr>
+                                    <td class="text-center"><span t-out="seq_num"/></td>
+                                    <td>
+                                        <span t-field="line.name"/>
+                                    </td>
+                                    <td class="text-center">
+                                        <span t-field="line.quantity"/>
+                                        <br/>
+                                        <span t-field="line.product_uom_id"/>
+                                    </td>
+                                    <td class="text-end">
+                                        <span t-field="line.price_unit" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    </td>
+                                    <td class="text-start">
+                                        <span t-out="', '.join(line.tax_ids.mapped('name'))"/>
+                                    </td>
+                                    <td class="text-end">
+                                        <span t-field="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    </td>
+                                </tr>
+                            </t>
+                            <t t-if="line.display_type == 'line_section'">
+                                <tr>
+                                    <td colspan="6"><strong><span t-field="line.name"/></strong></td>
+                                </tr>
+                            </t>
+                            <t t-if="line.display_type == 'line_note'">
+                                <tr>
+                                    <td colspan="6" class="text-muted"><span t-field="line.name"/></td>
+                                </tr>
+                            </t>
+                        </t>
+                    </tbody>
+                </table>
+
+                <!-- Totales -->
+                <div class="row">
+                    <div class="col-6 offset-6">
+                        <table class="table table-sm" style="font-size: 11px;">
+                            <tr>
+                                <th style="background-color: #f5f5f5;"><strong>Monto Libre de Impuestos</strong></th>
+                                <td class="text-end">
+                                    <span t-field="o.amount_untaxed" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                </td>
+                            </tr>
+                            <!-- Desglose de impuestos -->
+                            <t t-if="o.tax_totals">
+                                <t t-foreach="o.tax_totals.get('groups_by_subtotal', {}).get(list(o.tax_totals.get('groups_by_subtotal', {}).keys())[0] if o.tax_totals.get('groups_by_subtotal') else '', [])" t-as="tax_group">
+                                    <tr>
+                                        <th>
+                                            <span t-out="tax_group.get('tax_group_name', 'IVA')"/>
+                                            <t t-if="tax_group.get('tax_group_amount', 0)">
+                                                <span t-out="'%d%%' % int(tax_group.get('tax_group_amount', 0) / o.amount_untaxed * 100)" t-if="o.amount_untaxed"/>
+                                            </t>
+                                        </th>
+                                        <td class="text-end">
+                                            <span t-out="tax_group.get('tax_group_amount', 0)" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </t>
+                            <tr style="border-top: 2px solid #333;">
+                                <th style="background-color: #5a8f5a; color: white;"><strong>Total</strong></th>
+                                <td class="text-end" style="background-color: #5a8f5a; color: white;">
+                                    <strong><span t-field="o.amount_total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></strong>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Plazo de pago -->
+                <div t-if="o.invoice_payment_term_id" class="mt-3" style="font-size: 11px;">
+                    <strong>Plazo de pago: </strong><span t-field="o.invoice_payment_term_id"/>
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>
+<!-- vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4-->
