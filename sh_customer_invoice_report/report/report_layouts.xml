@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Pie de página corporativo SH Ingeniería -->
+    <template id="reportes_footer">
+        <div class="footer" style="color: rgb(0, 0, 70); text-align: center; font-size: 9px;">
+            <hr style="border-top: 1px solid #28a745; margin: 2px 0;"/>
+            <div>
+                <span t-field="o.company_id.street"/>
+                - <span t-field="o.company_id.state_id"/>
+                • Tel. <span t-field="o.company_id.phone"/>
+            </div>
+            <span t-field="o.company_id.email"/>
+            • <span t-field="o.company_id.website"/>
+        </div>
+    </template>
+
+    <!-- Cabecera para Factura de Venta Electrónica (dentro del cuerpo del artículo) -->
+    <template id="reportes_header_invoice">
+        <table style="width: 100%; margin-bottom: 5px;">
+            <tr>
+                <td style="width: 50%; vertical-align: top;">
+                    <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="height: 100px;" alt="Logo"/>
+                    <div style="font-size: 9px; color: rgb(0, 0, 70); margin-top: 3px;">
+                        <div>Somos Responsables de IVA, No somos Grandes Contribuyentes Ni Autorretenedores</div>
+                    </div>
+                </td>
+                <td style="width: 50%; vertical-align: top;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                        <tr>
+                            <td style="border: 1px solid black; text-align: center; padding: 5px; background-color: #003366; color: white;">
+                                <strong>
+                                    <t t-if="o.move_type == 'out_invoice'">Factura Electrónica De<br/>Venta No.</t>
+                                    <t t-elif="o.move_type == 'out_refund'">Nota Crédito No.</t>
+                                    <t t-else="">Documento No.</t>
+                                </strong>
+                            </td>
+                            <td style="border: 1px solid black; text-align: center; padding: 5px;">
+                                <strong style="font-size: 14px;"><span t-field="o.name"/></strong>
+                            </td>
+                        </tr>
+                    </table>
+                    <!-- Texto resolución DIAN (condicional, solo si el diario tiene resolución) -->
+                    <div t-if="o.journal_id.l10n_co_edi_dian_authorization_number" style="font-size: 8px; margin-top: 3px;">
+                        <div>Documento Oficial de Autorización de Numeración Facturación Electronica DIAN</div>
+                        <div>No. <span t-field="o.journal_id.l10n_co_edi_dian_authorization_number"/>
+                            del <span t-field="o.journal_id.l10n_co_edi_dian_authorization_date"/>
+                            que habilita desde <span t-out="o.journal_id.l10n_co_edi_min_range_number"/>
+                        </div>
+                        <div>hasta <span t-out="o.journal_id.l10n_co_edi_max_range_number"/>
+                            Vence el <span t-field="o.journal_id.l10n_co_edi_dian_authorization_end_date"/>.</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </template>
+
+    <!-- Layout interno para Factura de Venta -->
+    <template id="internal_layout_invoice">
+        <t t-if="not o" t-set="o" t-value="doc"/>
+        <t t-if="not company">
+            <t t-if="company_id">
+                <t t-set="company" t-value="company_id"/>
+            </t>
+            <t t-elif="o and 'company_id' in o and o.company_id.sudo()">
+                <t t-set="company" t-value="o.company_id.sudo()"/>
+            </t>
+            <t t-else="">
+                <t t-set="company" t-value="res_company"/>
+            </t>
+        </t>
+        <div class="article" style="padding-top: 0; margin-top: 0;" t-att-data-oe-model="o and o._name" t-att-data-oe-id="o and o.id" t-att-data-oe-lang="o and o.env.context.get('lang')">
+            <t t-call="sh_customer_invoice_report.reportes_header_invoice"/>
+            <t t-out="0"/>
+        </div>
+        <t t-call="sh_customer_invoice_report.reportes_footer"/>
+    </template>
+
+</odoo>
+<!-- vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4-->
