@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Herencia del reporte de factura: agregar columna SECUENCIA a la tabla de líneas -->
+    <template id="report_invoice_document_inherit_sequence"
+              inherit_id="account.report_invoice_document">
+
+        <!-- Agregar encabezado SECUENCIA antes de Descripción -->
+        <xpath expr="//th[@name='th_description']" position="before">
+            <th name="th_sequence" class="text-start" style="width: 80px;"><span>Sequence</span></th>
+        </xpath>
+
+        <!-- Ajustar colspan de secciones/notas para incluir la columna extra -->
+        <xpath expr="//t[@t-set='line_colspan']" position="attributes">
+            <attribute name="t-value">4 + (1 if display_discount else 0) + (1 if display_taxes and not line.tax_ids else 0)</attribute>
+        </xpath>
+
+        <!-- Agregar celda de secuencia en líneas de producto -->
+        <xpath expr="//td[@name='account_invoice_line_name']" position="before">
+            <td name="td_sequence" class="text-start">
+                <span t-field="line.sequence">10</span>
+            </td>
+        </xpath>
+
+    </template>
+
+    <!-- Personalizar el header del layout boxed: solo logo grande con línea separadora -->
+    <template id="external_layout_boxed_inherit_sh"
+              inherit_id="web.external_layout_boxed">
+
+        <!-- Reemplazar la fila del header: solo logo grande + línea separadora -->
+        <xpath expr="//div[contains(@t-attf-class, 'header')]/div[hasclass('row','mb8')]" position="replace">
+            <div style="padding-bottom: 8px; border-bottom: 2px solid #3c3c3c;">
+                <img t-if="company.logo"
+                     t-att-src="image_data_uri(company.logo)"
+                     style="width: auto; height: 110px;"
+                     alt="Logo"/>
+            </div>
+        </xpath>
+
+    </template>
+
+</odoo>
+<!-- vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4-->
