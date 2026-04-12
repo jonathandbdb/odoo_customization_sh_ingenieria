@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Layout interno propio: todo en el article, sin header/footer separados de wkhtmltopdf -->
+    <template id="sh_po_layout">
+        <t t-if="not o" t-set="o" t-value="doc"/>
+        <t t-if="not company">
+            <t t-if="company_id">
+                <t t-set="company" t-value="company_id"/>
+            </t>
+            <t t-elif="o and 'company_id' in o and o.company_id.sudo()">
+                <t t-set="company" t-value="o.company_id.sudo()"/>
+            </t>
+            <t t-else="">
+                <t t-set="company" t-value="res_company"/>
+            </t>
+        </t>
+
+        <!-- Todo dentro del article para evitar problemas con wkhtmltopdf header/footer -->
+        <div class="article"
+             t-att-data-oe-model="o and o._name"
+             t-att-data-oe-id="o and o.id"
+             t-att-data-oe-lang="o and o.env.context.get('lang')">
+
+            <!-- Cabecera: Logo + número de documento -->
+            <table style="width: 100%; border: none; margin-bottom: 20px;">
+                <tr>
+                    <td style="width: 50%; vertical-align: middle; border: none;">
+                        <img t-if="company.logo"
+                             t-att-src="image_data_uri(company.logo)"
+                             style="width: 380px; height: auto;"
+                             alt="Logo"/>
+                    </td>
+                    <td style="width: 50%; vertical-align: middle; padding-top: 10px; border: none;">
+                        <div style="font-size: 20px; font-weight: bold;">
+                            ORDEN DE COMPRA No. <span t-field="o.name"/>
+                        </div>
+                        <div style="font-size: 14px;">
+                            Documento Externo No. <span t-field="o.origin"/>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Contenido principal -->
+            <t t-out="0"/>
+
+            <!-- Pie de página corporativo -->
+            <div style="color: rgb(0, 0, 70); font-size: 11px; text-align: center; margin-top: 40px;">
+                <hr style="border-top: 2px solid #28a745;"/>
+                <div>
+                    <span t-field="company.street"/>
+                    - <span t-field="company.state_id"/>
+                    <t t-if="company.phone">
+                        • Tel. <span t-field="company.phone"/>
+                    </t>
+                </div>
+                <div>
+                    <span t-field="company.email"/>
+                    • <span t-field="company.website"/>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Reporte principal de Orden de Compra -->
+    <template id="report_sh_purchase_order_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="sh_purchase_report.sh_po_layout">
+                    <div class="page" style="font-size: 12px;">
+
+                        <!-- Sección superior: Proveedor (izq) y Concepto (der) -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 2px;">
+                            <tr>
+                                <!-- Datos del proveedor -->
+                                <td style="width: 50%; vertical-align: top; padding-right: 5px; border: none;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="border: 1px solid black; width: 25%; padding: 4px;">
+                                                <strong>PROVEEDOR</strong>
+                                            </td>
+                                            <td style="border: 1px solid black; padding: 4px;">
+                                                <span t-field="o.partner_id.name"/>
+                                                <t t-if="o.partner_id.parent_id">
+                                                    , <span t-field="o.partner_id.parent_id.name"/>
+                                                </t>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid black; padding: 4px;">
+                                                <strong>NIT</strong>
+                                            </td>
+                                            <td style="border: 1px solid black; padding: 4px;">
+                                                <t t-if="o.partner_id.vat">
+                                                    <t t-set="vat_display" t-value="o.partner_id.vat.split('-')[0].strip() if '-' in (o.partner_id.vat or '') else o.partner_id.vat"/>
+                                                    <span t-out="vat_display"/>
+                                                </t>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <!-- Concepto -->
+                                <td style="width: 50%; vertical-align: top; padding-left: 5px; border: none;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="border: 1px solid black; padding: 4px; text-align: center;">
+                                                <strong>POR CONCEPTO DE</strong>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid black; padding: 4px;">
+                                                ORDEN DE COMPRA
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Dirección, Ciudad, Teléfono (izq) y espacio vacío (der) -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 2px;">
+                            <tr>
+                                <td style="width: 50%; vertical-align: top; padding-right: 5px; border: none;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="border: 1px solid black; width: 33%; padding: 4px;">
+                                                <strong>DIRECCIÓN</strong>
+                                            </td>
+                                            <td style="border: 1px solid black; width: 34%; padding: 4px;">
+                                                <strong>CIUDAD</strong>
+                                            </td>
+                                            <td style="border: 1px solid black; width: 33%; padding: 4px;">
+                                                <strong>TELÉFONO</strong>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid black; padding: 4px;">
+                                                <span t-field="o.partner_id.street"/>
+                                            </td>
+                                            <td style="border: 1px solid black; padding: 4px;">
+                                                <t t-if="o.partner_id.city">
+                                                    <span t-field="o.partner_id.city"/>
+                                                </t>
+                                            </td>
+                                            <td style="border: 1px solid black; padding: 4px;">
+                                                <span t-field="o.partner_id.phone"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td style="width: 50%; vertical-align: top; padding-left: 5px; border: none;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="border: 1px solid black; padding: 4px;">
+                                                <span style="color: white;">-</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid black; padding: 4px;">
+                                                <span style="color: white;">-</span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Fechas (izq), Elaborado por y Forma de pago (der) -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px;">
+                            <tr>
+                                <td style="width: 50%; vertical-align: top; padding-right: 5px; border: none;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="border: 1px solid black; width: 50%; padding: 4px; text-align: center;">
+                                                <strong>FECHA DEL PEDIDO</strong>
+                                            </td>
+                                            <td style="border: 1px solid black; width: 50%; padding: 4px; text-align: center;">
+                                                <strong>FECHA RECEPCIÓN DE COMPRA</strong>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid black; padding: 4px; text-align: center;">
+                                                <span t-out="o._get_date_format(o.date_approve or o.date_order)"/>
+                                            </td>
+                                            <td style="border: 1px solid black; padding: 4px; text-align: center;">
+                                                <span t-out="o._get_date_format(o.date_planned)"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                                <td style="width: 50%; vertical-align: top; padding-left: 5px; border: none;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="border: 1px solid black; width: 50%; padding: 4px; text-align: center;">
+                                                <strong>ELABORADO POR</strong>
+                                            </td>
+                                            <td style="border: 1px solid black; width: 50%; padding: 4px; text-align: center;">
+                                                <strong>FORMA DE PAGO</strong>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid black; padding: 4px; text-align: center;">
+                                                <span t-field="o.user_id"/>
+                                            </td>
+                                            <td style="border: 1px solid black; padding: 4px; text-align: center;">
+                                                <span t-field="o.payment_term_id"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Tabla de líneas de la orden -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px;">
+                            <tr>
+                                <th style="border: 1px solid black; width: 44%; padding: 4px; text-align: center;">
+                                    <strong>Descripción</strong>
+                                </th>
+                                <th style="border: 1px solid black; width: 8%; padding: 4px; text-align: center;">
+                                    <strong>Cantidad</strong>
+                                </th>
+                                <th style="border: 1px solid black; width: 10%; padding: 4px; text-align: center;">
+                                    <strong>U. Medida</strong>
+                                </th>
+                                <th style="border: 1px solid black; width: 14%; padding: 4px; text-align: center;">
+                                    <strong>Valor Unitario</strong>
+                                </th>
+                                <th style="border: 1px solid black; width: 7%; padding: 4px; text-align: center;">
+                                    <strong>IVA</strong>
+                                </th>
+                                <th style="border: 1px solid black; width: 17%; padding: 4px; text-align: center;">
+                                    <strong>Total</strong>
+                                </th>
+                            </tr>
+                            <t t-foreach="o.order_line" t-as="line">
+                                <!-- Secciones -->
+                                <t t-if="line.display_type == 'line_section'">
+                                    <tr>
+                                        <td colspan="6" style="border: 1px solid black; padding: 4px; font-weight: bold;">
+                                            <span t-field="line.name"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                                <!-- Notas -->
+                                <t t-elif="line.display_type == 'line_note'">
+                                    <tr>
+                                        <td colspan="6" style="border-left: 1px solid black; border-right: 1px solid black; padding: 4px; font-style: italic;">
+                                            <span t-field="line.name"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                                <!-- Líneas normales -->
+                                <t t-elif="not line.display_type">
+                                    <tr>
+                                        <td style="border: 1px solid black; padding: 4px;">
+                                            <span t-field="line.name"/>
+                                        </td>
+                                        <td style="border: 1px solid black; padding: 4px; text-align: right;">
+                                            <span t-field="line.product_qty"/>
+                                        </td>
+                                        <td style="border: 1px solid black; padding: 4px; text-align: center;">
+                                            <span t-field="line.product_uom_id"/>
+                                        </td>
+                                        <td style="border: 1px solid black; padding: 4px; text-align: right;">
+                                            <span t-field="line.price_unit"
+                                                  t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                        </td>
+                                        <td style="border: 1px solid black; padding: 4px; text-align: center;">
+                                            <t t-set="tax_perc" t-value="0"/>
+                                            <t t-foreach="line.tax_ids" t-as="tax">
+                                                <t t-if="tax.amount and tax.amount_type == 'percent'">
+                                                    <t t-set="tax_perc" t-value="tax.amount / 100.0"/>
+                                                </t>
+                                            </t>
+                                            <span t-out="tax_perc"/>
+                                        </td>
+                                        <td style="border: 1px solid black; padding: 4px; text-align: right;">
+                                            <span t-field="line.price_subtotal"
+                                                  t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </t>
+                        </table>
+
+                        <!-- Totales y valor en letras -->
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <!-- Valor en letras (izquierda) -->
+                                <td style="width: 50%; vertical-align: top; padding-right: 10px; border: none;">
+                                    <strong>Valor en letras:</strong><br/>
+                                    <span t-field="o.total_letras"/>
+                                </td>
+                                <!-- Tabla de totales (derecha) -->
+                                <td style="width: 50%; vertical-align: top; border: none;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <tr>
+                                            <td style="border: 1px solid black; width: 50%; padding: 4px;">
+                                                <strong>SUBTOTAL</strong>
+                                            </td>
+                                            <td style="border: 1px solid black; width: 50%; padding: 4px; text-align: right;">
+                                                <t t-set="subtotal_bruto" t-value="0.0"/>
+                                                <t t-foreach="o.order_line" t-as="line">
+                                                    <t t-if="not line.display_type">
+                                                        <t t-set="subtotal_bruto" t-value="subtotal_bruto + line.product_qty * line.price_unit"/>
+                                                    </t>
+                                                </t>
+                                                <strong>
+                                                    <span t-out="subtotal_bruto"
+                                                          t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                                </strong>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid black; padding: 4px;">
+                                                <strong>DESCUENTO</strong>
+                                            </td>
+                                            <td style="border: 1px solid black; padding: 4px; text-align: right;">
+                                                <t t-set="total_descuento" t-value="0.0"/>
+                                                <t t-foreach="o.order_line" t-as="line">
+                                                    <t t-if="not line.display_type">
+                                                        <t t-set="total_descuento" t-value="total_descuento + (line.price_unit * line.product_qty) - line.price_subtotal"/>
+                                                    </t>
+                                                </t>
+                                                <strong>
+                                                    <span t-out="total_descuento"
+                                                          t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                                </strong>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid black; padding: 4px;">
+                                                <strong>IVA</strong>
+                                            </td>
+                                            <td style="border: 1px solid black; padding: 4px; text-align: right;">
+                                                <strong>
+                                                    <span t-field="o.amount_tax"
+                                                          t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                                </strong>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="border: 1px solid black; padding: 4px;">
+                                                <strong>TOTAL DOCUMENTO</strong>
+                                            </td>
+                                            <td style="border: 1px solid black; padding: 4px; text-align: right;">
+                                                <strong>
+                                                    <span t-field="o.amount_total"
+                                                          t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                                </strong>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                    <div style="text-align: center; margin-top: 4px;">
+                                        <strong>Precios en <span t-field="o.currency_id"/></strong>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Firma responsable -->
+                        <div style="margin-top: 30px; margin-bottom: 20px;">
+                            <span>Firma Responsable: </span>
+                            <span style="display: inline-block; width: 300px; border-bottom: 1px solid black;">
+                                &#160;
+                            </span>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>
+<!-- vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4-->
