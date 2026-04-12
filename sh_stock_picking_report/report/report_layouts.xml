@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Pie de página corporativo SH Ingeniería -->
+    <template id="reportes_footer">
+        <div class="footer col-12 text-center align-self-center" style="color: rgb(0, 0, 70);">
+            <hr class="bg-success"/>
+            <div>
+                <span t-field="o.company_id.street"/>
+                - <span t-field="o.company_id.state_id"/>
+                • Tel. <span t-field="o.company_id.phone"/>
+            </div>
+            <span t-field="o.company_id.email"/>
+            • <span t-field="o.company_id.website"/>
+        </div>
+    </template>
+
+    <!-- Cabecera para Remisión (Entrega/Recepción) - Contenido en cuerpo del artículo -->
+    <template id="reportes_header_2">
+        <div style="text-align: center; margin-bottom: 2px;">
+            <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="height: 100px;" alt="Logo"/>
+            <div style="font-size: 18px; color: rgb(0, 0, 70);">
+                <span>NIT. <span t-field="o.company_id.vat"/></span>
+            </div>
+        </div>
+        <div style="text-align: right; font-size: 18px; margin-bottom: 5px;">
+            <strong>REMISIÓN No. <span t-field="o.name"/></strong>
+        </div>
+    </template>
+
+    <!-- Layout interno para Remisión (con header en cuerpo y footer corporativo) -->
+    <template id="internal_layout2">
+        <t t-if="not o" t-set="o" t-value="doc"/>
+        <t t-if="not company">
+            <t t-if="company_id">
+                <t t-set="company" t-value="company_id"/>
+            </t>
+            <t t-elif="o and 'company_id' in o and o.company_id.sudo()">
+                <t t-set="company" t-value="o.company_id.sudo()"/>
+            </t>
+            <t t-else="">
+                <t t-set="company" t-value="res_company"/>
+            </t>
+        </t>
+        <div class="article" t-att-data-oe-model="o and o._name" t-att-data-oe-id="o and o.id" t-att-data-oe-lang="o and o.env.context.get('lang')">
+            <t t-call="sh_stock_picking_report.reportes_header_2"/>
+            <t t-out="0"/>
+        </div>
+        <t t-call="sh_stock_picking_report.reportes_footer"/>
+    </template>
+
+</odoo>
+<!-- vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4-->

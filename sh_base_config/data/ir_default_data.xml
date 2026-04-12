@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        Configurar NIT (l10n_co.rut) como tipo de identificación por defecto
+        para nuevos contactos. Aplica globalmente a toda la base de datos.
+    -->
+    <function model="ir.default" name="set" eval="('res.partner', 'l10n_latam_identification_type_id', obj().env.ref('l10n_co.rut').id)"/>
+</odoo>
+<!-- vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4-->
