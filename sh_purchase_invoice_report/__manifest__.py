@@ -8,8 +8,8 @@ Personalización del reporte de factura de proveedor para SH Ingeniería.
 - Agrega columna SECUENCIA a la tabla de líneas del reporte de factura
     """,
     "category": "Custom",
-    "author": "NEXIT",
-    "website": "https://www.nexit.com.uy",
+    "author": "Conecta",
+    "website": "https://www.conecta.sh",
     "license": "OPL-1",
     "depends": [
         "account",
