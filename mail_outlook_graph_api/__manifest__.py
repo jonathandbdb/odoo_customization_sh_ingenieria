@@ -12,8 +12,8 @@ y los redirige a través de la API REST de Microsoft Graph.
 - Requiere agregar el permiso Microsoft Graph > Mail.Send en la App Registration de Azure AD.
     """,
     "category": "Custom",
-    "author": "NEXIT",
-    "website": "https://www.nexit.com.uy",
+    "author": "Conecta",
+    "website": "https://www.conecta.sh",
     "license": "OPL-1",
     "depends": ["microsoft_outlook"],
     "data": [],
