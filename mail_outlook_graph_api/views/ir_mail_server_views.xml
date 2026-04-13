@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista herencia: agregar toggle de Graph API en formulario de servidor de correo -->
+    <record id="ir_mail_server_view_form_graph_api" model="ir.ui.view">
+        <field name="name">ir.mail_server.view.form.inherit.graph.api</field>
+        <field name="model">ir.mail_server</field>
+        <field name="inherit_id" ref="base.ir_mail_server_form"/>
+        <field name="arch" type="xml">
+            <!-- Agregar sección de Graph API dentro de la página de conexión -->
+            <xpath expr="//page[@name='connection']/group" position="after">
+                <group invisible="smtp_authentication != 'outlook'" string="Microsoft Graph API">
+                    <group>
+                        <field name="use_graph_api" widget="boolean_toggle"/>
+                    </group>
+                    <group>
+                        <div invisible="not use_graph_api" class="alert alert-info mb-0" role="status">
+                            <strong>Graph API habilitado</strong>
+                            <p class="mb-0 mt-1">
+                                Los correos se enviarán mediante la API REST de Microsoft Graph
+                                (HTTPS, puerto 443) en lugar de SMTP (puerto 587).
+                                <br/>
+                                Requiere el permiso <strong>Mail.Send</strong> de Microsoft Graph
+                                con Admin Consent en la App Registration de Azure AD.
+                            </p>
+                        </div>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>
+<!-- vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4-->

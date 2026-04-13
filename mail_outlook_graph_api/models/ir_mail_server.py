@@ -6,7 +6,7 @@ import time
 
 import requests
 
-from odoo import api, models, _
+from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -20,10 +20,14 @@ TOKEN_REQUEST_TIMEOUT = 10
 # Umbral de validez del token en segundos (renovar 30s antes de expirar)
 GRAPH_TOKEN_VALIDITY_THRESHOLD = 30
 
+# Tamaño máximo de adjuntos inline en Graph API (4MB)
+GRAPH_MAX_ATTACHMENT_SIZE = 4 * 1024 * 1024
+
 
 class _GraphApiSession:
     """
-    Objeto sesión dummy que reemplaza la conexión SMTP para servidores Outlook.
+    Objeto sesión dummy que reemplaza la conexión SMTP para servidores con Graph API.
+
     mail.mail.send() pre-establece una conexión SMTP llamando a _connect__()
     ANTES de llamar a send_email(). Si el puerto 587 está bloqueado, esa conexión
     falla y el batch se marca como excepción sin ejecutar nuestro override.
@@ -44,49 +48,64 @@ class _GraphApiSession:
     def quit(self):
         """Operación no-op — no hay conexión real que cerrar."""
 
+    def close(self):
+        """Operación no-op — no hay conexión real que cerrar."""
+
     def send_message(self, message, smtp_from, smtp_to_list):
         """
         No-op: el envío real se hace en send_email() vía Graph API.
         Este método existe por si algún flujo intenta usarlo.
         """
-        pass
 
 
 class IrMailServer(models.Model):
     """
     Extensión del servidor de correo para enviar emails vía Microsoft Graph API
-    en lugar de SMTP, útil cuando el puerto 587 está bloqueado.
+    en lugar de SMTP. Controlado por el campo use_graph_api en cada servidor.
     """
     _inherit = 'ir.mail_server'
+
+    # Campo para activar Graph API en un servidor Outlook específico
+    use_graph_api = fields.Boolean(
+        string="Use Graph API",
+        default=False,
+        help="Send emails via Microsoft Graph API (HTTPS) instead of SMTP. "
+             "Useful when SMTP port 587 is blocked on the server. "
+             "Requires 'Mail.Send' permission in the Azure AD App Registration.",
+    )
+
+    @api.onchange('smtp_authentication')
+    def _onchange_smtp_authentication_graph_api(self):
+        """Limpiar use_graph_api si la autenticación deja de ser Outlook."""
+        if self.smtp_authentication != 'outlook':
+            self.use_graph_api = False
+
+    # -------------------------------------------------------------------------
+    # Conexión: interceptar _connect__() para retornar sesión dummy
+    # -------------------------------------------------------------------------
 
     def _connect__(self, host=None, port=None, user=None, password=None, encryption=None,
                    smtp_from=None, ssl_certificate=None, ssl_private_key=None,
                    smtp_debug=False, mail_server_id=None, allow_archived=False):
         """
-        Interceptar la conexión SMTP. Si el servidor es Outlook, retornar un
-        objeto sesión dummy en lugar de intentar conectar por SMTP (que fallaría
-        si el puerto 587 está bloqueado).
+        Interceptar la conexión SMTP. Si el servidor tiene Graph API habilitado,
+        retornar un objeto sesión dummy en lugar de intentar conectar por SMTP.
 
         Esto es crítico porque mail.mail.send() llama a _connect__() ANTES de
-        send_email(). Si _connect__() falla, el batch completo se marca como
-        excepción y nuestro override de send_email() nunca se ejecuta.
+        send_email(). Si _connect__() falla por puerto bloqueado, el batch
+        completo se marca como excepción y nuestro override nunca se ejecuta.
         """
-        # Resolver el servidor para verificar si es Outlook
-        mail_server = None
-        if mail_server_id:
-            mail_server = self.sudo().browse(mail_server_id)
-        elif not host:
-            mail_server, smtp_from = self.sudo()._find_mail_server(smtp_from)
+        # Resolver el servidor para verificar si tiene Graph API habilitado
+        mail_server = self._resolve_graph_server(mail_server_id, host, smtp_from)
 
-        # Si es servidor Outlook, retornar sesión dummy (sin tocar SMTP)
-        if mail_server and mail_server.smtp_authentication == 'outlook':
+        if mail_server and mail_server.use_graph_api:
             _logger.info(
-                'Graph API: retornando sesión dummy para servidor Outlook "%s" (sin conexión SMTP)',
+                'Graph API: retornando sesión dummy para servidor "%s" (bypass SMTP)',
                 mail_server.name,
             )
             return _GraphApiSession(mail_server)
 
-        # Para otros servidores, flujo SMTP normal
+        # Para servidores sin Graph API, flujo SMTP normal
         return super()._connect__(
             host=host, port=port, user=user, password=password,
             encryption=encryption, smtp_from=smtp_from,
@@ -95,13 +114,92 @@ class IrMailServer(models.Model):
             allow_archived=allow_archived,
         )
 
+    # -------------------------------------------------------------------------
+    # Probar conexión: override para validar Graph API
+    # -------------------------------------------------------------------------
+
+    def test_smtp_connection(self, autodetect_max_email_size=False):
+        """
+        Override de la prueba de conexión. Para servidores con Graph API habilitado,
+        se valida obteniendo un access token de Microsoft Graph en lugar de probar SMTP.
+
+        :param bool autodetect_max_email_size: si se detecta el tamaño máximo de email
+        :return: Acción de notificación con el resultado
+        :rtype: dict
+        """
+        graph_servers = self.filtered(
+            lambda s: s.use_graph_api and s.smtp_authentication == 'outlook'
+        )
+        smtp_servers = self - graph_servers
+
+        # Probar servidores Graph API
+        for server in graph_servers:
+            self._test_graph_connection(server)
+            if autodetect_max_email_size:
+                # Graph API: límite de 4MB para adjuntos inline
+                server.max_email_size = GRAPH_MAX_ATTACHMENT_SIZE / (1024 ** 2)
+
+        # Probar servidores SMTP normales (delegar al flujo original)
+        if smtp_servers:
+            return super(IrMailServer, smtp_servers).test_smtp_connection(
+                autodetect_max_email_size=autodetect_max_email_size
+            )
+
+        # Solo servidores Graph API — retornar notificación de éxito
+        if autodetect_max_email_size:
+            message = _(
+                'Email maximum size updated (%(details)s).',
+                details=', '.join(
+                    '%s: 4 MB (Graph API)' % server.name for server in graph_servers
+                ),
+            )
+        else:
+            message = _('Graph API Connection Test Successful!')
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'message': message,
+                'type': 'success',
+                'sticky': False,
+                'next': {'type': 'ir.actions.act_window_close'},
+            },
+        }
+
+    def _test_graph_connection(self, server):
+        """
+        Probar la conexión a Microsoft Graph API obteniendo un access token.
+
+        Si el token se obtiene exitosamente, significa que:
+        - Las credenciales OAuth (client_id/secret) son correctas
+        - El refresh token del servidor es válido
+        - Azure AD ha otorgado consentimiento para el scope Mail.Send
+
+        :param server: Registro ir.mail_server a probar
+        :raises UserError: Si la conexión falla
+        """
+        try:
+            self._get_graph_access_token(server)
+        except UserError:
+            raise
+        except Exception as e:
+            _logger.error('Graph API: error en test de conexión: %s', e, exc_info=True)
+            raise UserError(_(
+                'Graph API Connection Test Failed!\n%s', str(e)
+            ))
+
+    # -------------------------------------------------------------------------
+    # Envío de correo: interceptar send_email() para usar Graph API
+    # -------------------------------------------------------------------------
+
     @api.model
     def send_email(self, message, mail_server_id=None, smtp_server=None, smtp_port=None,
                    smtp_user=None, smtp_password=None, smtp_encryption=None,
                    smtp_ssl_certificate=None, smtp_ssl_private_key=None,
                    smtp_debug=False, smtp_session=None):
         """
-        Interceptar el envío de correo. Si el servidor usa autenticación Outlook,
+        Interceptar el envío de correo. Si el servidor tiene Graph API habilitado,
         enviar vía Microsoft Graph API. Caso contrario, delegar al flujo SMTP normal.
 
         :param message: Objeto email.message.Message con el correo a enviar
@@ -115,8 +213,8 @@ class IrMailServer(models.Model):
             # Resolver el servidor de correo por otros medios
             mail_server = self._resolve_outlook_server(message, mail_server_id, smtp_server)
 
-        # Si no es un servidor Outlook, delegar al flujo SMTP normal
-        if not mail_server or mail_server.smtp_authentication != 'outlook':
+        # Si el servidor no tiene Graph API habilitado, delegar al flujo SMTP normal
+        if not mail_server or not mail_server.use_graph_api:
             return super().send_email(
                 message, mail_server_id=mail_server_id,
                 smtp_server=smtp_server, smtp_port=smtp_port,
@@ -132,7 +230,10 @@ class IrMailServer(models.Model):
             _logger.debug("Graph API: omitir envío en modo test")
             return message['Message-Id']
 
-        _logger.info('Graph API: enviando correo mediante Microsoft Graph para servidor "%s"', mail_server.name)
+        _logger.info(
+            'Graph API: enviando correo mediante Microsoft Graph para servidor "%s"',
+            mail_server.name,
+        )
 
         # Obtener token de acceso para Graph API (con caché)
         access_token = self._get_graph_access_token(mail_server)
@@ -146,9 +247,29 @@ class IrMailServer(models.Model):
 
         return message['Message-Id']
 
+    # -------------------------------------------------------------------------
+    # Métodos auxiliares de resolución de servidor
+    # -------------------------------------------------------------------------
+
+    def _resolve_graph_server(self, mail_server_id, host, smtp_from):
+        """
+        Resolver el servidor de correo y verificar si tiene Graph API habilitado.
+
+        :param mail_server_id: ID del servidor de correo
+        :param host: Host SMTP manual
+        :param smtp_from: Email del remitente
+        :return: Registro ir.mail_server o None
+        """
+        if mail_server_id:
+            return self.sudo().browse(mail_server_id)
+        if not host:
+            mail_server, _smtp_from = self.sudo()._find_mail_server(smtp_from)
+            return mail_server
+        return None
+
     def _resolve_outlook_server(self, message, mail_server_id, smtp_server):
         """
-        Resolver el registro ir.mail_server correspondiente.
+        Resolver el registro ir.mail_server correspondiente para el envío.
 
         :param message: Mensaje email
         :param mail_server_id: ID del servidor de correo
@@ -161,6 +282,10 @@ class IrMailServer(models.Model):
             mail_server, _smtp_from = self.sudo()._find_mail_server(message['From'])
             return mail_server
         return None
+
+    # -------------------------------------------------------------------------
+    # Token de acceso (Graph API)
+    # -------------------------------------------------------------------------
 
     def _get_graph_access_token(self, mail_server):
         """
@@ -181,7 +306,7 @@ class IrMailServer(models.Model):
                 'Server: %s', mail_server.name
             ))
 
-        # Verificar caché del token Graph API (almacenado en el contexto del server)
+        # Verificar caché del token Graph API
         cache_key = f'_graph_api_token_{mail_server.id}'
         cache_exp_key = f'_graph_api_token_exp_{mail_server.id}'
         cached_token = getattr(mail_server, cache_key, None)
@@ -206,7 +331,7 @@ class IrMailServer(models.Model):
                 'in System Parameters.'
             ))
 
-        endpoint = self.env['ir.config_parameter'].sudo().get_param(
+        endpoint = Config.get_param(
             'microsoft_outlook.endpoint',
             'https://login.microsoftonline.com/common/oauth2/v2.0/',
         )
@@ -249,7 +374,7 @@ class IrMailServer(models.Model):
         if not access_token:
             raise UserError(_('Microsoft returned an empty access token.'))
 
-        # Actualizar refresh_token si Microsoft devuelve uno nuevo
+        # Actualizar refresh_token si Microsoft devuelve uno nuevo (rotación de tokens)
         new_refresh_token = token_data.get('refresh_token')
         if new_refresh_token and new_refresh_token != mail_server.microsoft_outlook_refresh_token:
             mail_server.sudo().write({
@@ -266,6 +391,10 @@ class IrMailServer(models.Model):
             pass  # Si no se puede cachear, no es crítico
 
         return access_token
+
+    # -------------------------------------------------------------------------
+    # Construcción del payload y envío Graph API
+    # -------------------------------------------------------------------------
 
     def _build_graph_payload(self, message):
         """
@@ -321,6 +450,73 @@ class IrMailServer(models.Model):
             payload['message']['attachments'] = attachments
 
         return payload
+
+    def _send_via_graph(self, access_token, sender_email, payload, message):
+        """
+        Ejecutar el envío del correo vía Microsoft Graph API.
+
+        :param access_token: Token de acceso válido para Graph API
+        :param sender_email: Email del remitente (UPN en Azure AD)
+        :param payload: Dict con el payload del correo
+        :param message: Mensaje original (para logging)
+        :raises UserError: Si el envío falla
+        """
+        url = GRAPH_SEND_MAIL_ENDPOINT.format(
+            base=GRAPH_API_BASE,
+            user=sender_email,
+        )
+
+        headers = {
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/json',
+        }
+
+        try:
+            response = requests.post(
+                url,
+                headers=headers,
+                data=json.dumps(payload),
+                timeout=30,
+            )
+        except requests.exceptions.RequestException as e:
+            _logger.error('Graph API: error de red al enviar correo: %s', e)
+            raise UserError(_(
+                'Could not connect to Microsoft Graph API. %s', str(e)
+            ))
+
+        # Graph API retorna 202 Accepted para envío exitoso
+        if response.status_code == 202:
+            _logger.info(
+                'Graph API: correo enviado exitosamente [%s] -> %s',
+                message.get('Subject', '(sin asunto)'),
+                message.get('To', '(sin destinatario)'),
+            )
+            return True
+
+        # Manejar errores
+        try:
+            error_data = response.json()
+            error_msg = error_data.get('error', {}).get('message', str(error_data))
+            error_code = error_data.get('error', {}).get('code', 'Unknown')
+        except Exception:
+            error_msg = response.text
+            error_code = str(response.status_code)
+
+        _logger.error(
+            'Graph API: error al enviar correo [%s]: %s - %s',
+            error_code, error_msg, message.get('Subject', '')
+        )
+        raise UserError(_(
+            'Mail delivery failed via Microsoft Graph API.\n'
+            'Error code: %(code)s\n'
+            'Message: %(message)s',
+            code=error_code,
+            message=error_msg,
+        ))
+
+    # -------------------------------------------------------------------------
+    # Utilidades de parsing de email
+    # -------------------------------------------------------------------------
 
     @api.model
     def _parse_email_addresses(self, header_value):
@@ -418,7 +614,7 @@ class IrMailServer(models.Model):
                 continue
 
             # Limitar adjuntos inline a 4MB (límite de Graph API para adjuntos en el payload)
-            if len(payload) > 4 * 1024 * 1024:
+            if len(payload) > GRAPH_MAX_ATTACHMENT_SIZE:
                 _logger.warning(
                     'Graph API: adjunto "%s" excede 4MB (%d bytes), se omite',
                     filename, len(payload)
@@ -446,67 +642,4 @@ class IrMailServer(models.Model):
             attachments.append(attachment)
 
         return attachments
-
-    def _send_via_graph(self, access_token, sender_email, payload, message):
-        """
-        Ejecutar el envío del correo vía Microsoft Graph API.
-
-        :param access_token: Token de acceso válido para Graph API
-        :param sender_email: Email del remitente (UPN en Azure AD)
-        :param payload: Dict con el payload del correo
-        :param message: Mensaje original (para logging)
-        :raises UserError: Si el envío falla
-        """
-        url = GRAPH_SEND_MAIL_ENDPOINT.format(
-            base=GRAPH_API_BASE,
-            user=sender_email,
-        )
-
-        headers = {
-            'Authorization': f'Bearer {access_token}',
-            'Content-Type': 'application/json',
-        }
-
-        try:
-            response = requests.post(
-                url,
-                headers=headers,
-                data=json.dumps(payload),
-                timeout=30,
-            )
-        except requests.exceptions.RequestException as e:
-            _logger.error('Graph API: error de red al enviar correo: %s', e)
-            raise UserError(_(
-                'Could not connect to Microsoft Graph API. %s', str(e)
-            ))
-
-        # Graph API retorna 202 Accepted para envío exitoso
-        if response.status_code == 202:
-            _logger.info(
-                'Graph API: correo enviado exitosamente [%s] -> %s',
-                message.get('Subject', '(sin asunto)'),
-                message.get('To', '(sin destinatario)'),
-            )
-            return True
-
-        # Manejar errores
-        try:
-            error_data = response.json()
-            error_msg = error_data.get('error', {}).get('message', str(error_data))
-            error_code = error_data.get('error', {}).get('code', 'Unknown')
-        except Exception:
-            error_msg = response.text
-            error_code = str(response.status_code)
-
-        _logger.error(
-            'Graph API: error al enviar correo [%s]: %s - %s',
-            error_code, error_msg, message.get('Subject', '')
-        )
-        raise UserError(_(
-            'Mail delivery failed via Microsoft Graph API.\n'
-            'Error code: %(code)s\n'
-            'Message: %(message)s',
-            code=error_code,
-            message=error_msg,
-        ))
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

@@ -16,7 +16,9 @@ y los redirige a través de la API REST de Microsoft Graph.
     "website": "https://www.conecta.sh",
     "license": "OPL-1",
     "depends": ["microsoft_outlook"],
-    "data": [],
+    "data": [
+        "views/ir_mail_server_views.xml",
+    ],
     "installable": True,
     "application": False,
     "auto_install": False,
