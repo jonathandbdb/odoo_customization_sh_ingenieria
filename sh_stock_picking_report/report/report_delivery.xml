@@ -10,7 +10,10 @@
                     <!-- Sección 1: Proveedor/NIT + Por Concepto De (tabla única, sin gap) -->
                     <table style="width: 100%; border-collapse: collapse; border: 1px solid black;">
                         <tr>
-                            <td style="border: 1px solid black; padding: 3px 5px; width: 15%; font-weight: bold;">PROVEEDOR</td>
+                            <td style="border: 1px solid black; padding: 3px 5px; width: 15%; font-weight: bold;">
+                                <t t-if="o.picking_type_id.code == 'incoming'">PROVEEDOR</t>
+                                <t t-else="">CLIENTE</t>
+                            </td>
                             <td style="border: 1px solid black; padding: 3px 5px; width: 35%;"><span t-field="o.partner_id"/></td>
                             <td style="border: 1px solid black; padding: 3px 5px; width: 50%; font-weight: bold;" colspan="1">POR CONCEPTO DE</td>
                         </tr>
