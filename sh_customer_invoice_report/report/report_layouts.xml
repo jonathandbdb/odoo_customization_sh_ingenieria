@@ -17,32 +17,39 @@
 
     <!-- Cabecera para Factura de Venta Electrónica (dentro del cuerpo del artículo) -->
     <template id="reportes_header_invoice">
-        <table style="width: 100%; margin-bottom: 5px;">
+        <style>
+            .sh-header-table,
+            .sh-header-table tr,
+            .sh-header-table td,
+            .sh-header-table th {
+                border: 0 none !important;
+                outline: 0 !important;
+                box-shadow: none !important;
+            }
+        </style>
+        <table class="sh-header-table" cellpadding="0" cellspacing="0" style="width: 100%; margin-bottom: 12px;">
             <tr>
-                <td style="width: 50%; vertical-align: top;">
-                    <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="height: 100px;" alt="Logo"/>
-                    <div style="font-size: 9px; color: rgb(0, 0, 70); margin-top: 3px;">
-                        <div>Somos Responsables de IVA, No somos Grandes Contribuyentes Ni Autorretenedores</div>
+                <!-- Logo + texto fiscal -->
+                <td style="width: 40%; vertical-align: top; padding-right: 15px;">
+                    <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="height: 70px; margin-bottom: 6px;" alt="Logo"/>
+                    <div style="font-size: 9px; color: rgb(0, 0, 70);">
+                        Somos Responsables de IVA, No somos Grandes Contribuyentes Ni Autorretenedores
                     </div>
                 </td>
-                <td style="width: 50%; vertical-align: top;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
-                        <tr>
-                            <td style="border: 1px solid black; text-align: center; padding: 5px; background-color: #003366; color: white;">
-                                <strong>
-                                    <t t-if="o.move_type == 'out_invoice'">Factura Electrónica De<br/>Venta No.</t>
-                                    <t t-elif="o.move_type == 'out_refund'">Nota Crédito No.</t>
-                                    <t t-else="">Documento No.</t>
-                                </strong>
-                            </td>
-                            <td style="border: 1px solid black; text-align: center; padding: 5px;">
-                                <strong style="font-size: 14px;"><span t-field="o.name"/></strong>
-                            </td>
-                        </tr>
-                    </table>
-                    <!-- Texto resolución DIAN (condicional, solo si el diario tiene resolución) -->
-                    <div t-if="o.journal_id.l10n_co_edi_dian_authorization_number" style="font-size: 8px; margin-top: 3px;">
-                        <div>Documento Oficial de Autorización de Numeración Facturación Electronica DIAN</div>
+                <!-- Tipo de documento + N° + Resolución DIAN -->
+                <td style="width: 60%; vertical-align: top;">
+                    <div style="background-color: #003366; color: white; padding: 8px 10px; font-size: 11px; font-weight: bold; text-align: center;">
+                        <t t-if="o.move_type == 'out_invoice' and o.journal_id.l10n_co_edi_debit_note">Nota Débito Electrónica De Venta</t>
+                        <t t-elif="o.move_type == 'out_invoice'">Factura Electrónica De Venta</t>
+                        <t t-elif="o.move_type == 'out_refund'">Nota Crédito</t>
+                        <t t-else="">Documento</t>
+                    </div>
+                    <div style="padding: 8px 10px; font-size: 16px; font-weight: bold; text-align: center; border: 1px solid #003366; border-top: none;">
+                        No. <span t-field="o.name"/>
+                    </div>
+                    <!-- Texto resolución DIAN (solo para facturas y notas débito, no para notas crédito) -->
+                    <div t-if="o.journal_id.l10n_co_edi_dian_authorization_number and o.move_type == 'out_invoice'" style="font-size: 8px; margin-top: 8px; line-height: 1.5;">
+                        <div>Documento Oficial de Autorización de Numeración Facturación Electrónica DIAN</div>
                         <div>No. <span t-field="o.journal_id.l10n_co_edi_dian_authorization_number"/>
                             del <span t-field="o.journal_id.l10n_co_edi_dian_authorization_date"/>
                             que habilita desde <span t-out="o.journal_id.l10n_co_edi_min_range_number"/>
@@ -69,7 +76,7 @@
                 <t t-set="company" t-value="res_company"/>
             </t>
         </t>
-        <div class="article" style="padding-top: 0; margin-top: 0;" t-att-data-oe-model="o and o._name" t-att-data-oe-id="o and o.id" t-att-data-oe-lang="o and o.env.context.get('lang')">
+        <div class="article" style="padding-top: 0; margin-top: 0; border: 0 none !important;" t-att-data-oe-model="o and o._name" t-att-data-oe-id="o and o.id" t-att-data-oe-lang="o and o.env.context.get('lang')">
             <t t-call="sh_customer_invoice_report.reportes_header_invoice"/>
             <t t-out="0"/>
         </div>

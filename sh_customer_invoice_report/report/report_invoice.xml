@@ -23,7 +23,7 @@
                                 </td>
                                 <!-- Cliente: texto plano SIN borde (FIX 1 v10) -->
                                 <td style="width: 50%; vertical-align: top; font-size: 10px;">
-                                    <div style="margin-bottom: 2px;"><strong>CLIENTE:</strong> <span t-field="o.partner_id"/></div>
+                                    <div style="margin-bottom: 2px;"><strong>CLIENTE:</strong> <span t-field="o.partner_id.name"/></div>
                                     <div style="margin-bottom: 2px;"><strong>NIT:</strong> <span t-field="o.partner_id.vat_num"/></div>
                                     <div style="margin-bottom: 2px;"><strong>DIRECCION:</strong> <span t-field="o.partner_id.street"/></div>
                                     <div style="margin-bottom: 3px;">
@@ -59,6 +59,100 @@
                         <div t-if="o.narration" style="font-size: 10px; margin-bottom: 1px;">
                             <strong>Observaciones: </strong><span t-field="o.narration"/>
                         </div>
+
+                        <!-- Secciones exclusivas para Nota Crédito -->
+                        <t t-if="o.move_type == 'out_refund'">
+                            <!-- Documentos Relacionados -->
+                            <table t-if="o.reversed_entry_id" style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 3px;">
+                                <tr style="background-color: #003366; color: white;">
+                                    <th colspan="5" style="border: 1px solid black; padding: 4px; text-align: center; font-weight: bold;">DOCUMENTOS RELACIONADOS</th>
+                                </tr>
+                                <tr>
+                                    <td style="border: 1px solid black; padding: 3px; font-weight: bold; width: 10%;">No.:</td>
+                                    <td style="border: 1px solid black; padding: 3px; width: 25%;"><span t-field="o.reversed_entry_id.name"/></td>
+                                    <td style="border: 1px solid black; padding: 3px; font-weight: bold; width: 8%;">Tipo:</td>
+                                    <td style="border: 1px solid black; padding: 3px; width: 37%;">Factura</td>
+                                    <td style="border: 1px solid black; padding: 3px; width: 20%;">
+                                        <strong>Fecha:</strong> <span t-field="o.reversed_entry_id.invoice_date"/>
+                                    </td>
+                                </tr>
+                                <tr t-if="o.reversed_entry_id.l10n_co_edi_cufe_cude_ref">
+                                    <td style="border: 1px solid black; padding: 3px; font-weight: bold;">CUFE / CUDE:</td>
+                                    <td colspan="4" style="border: 1px solid black; padding: 3px; font-size: 8px; word-break: break-all;">
+                                        <span t-field="o.reversed_entry_id.l10n_co_edi_cufe_cude_ref"/>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Conceptos de la Nota Crédito -->
+                            <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 3px;">
+                                <tr style="background-color: #003366; color: white;">
+                                    <th colspan="2" style="border: 1px solid black; padding: 4px; text-align: center; font-weight: bold;">CONCEPTOS DE LA NOTA</th>
+                                </tr>
+                                <tr style="background-color: #e0e0e0;">
+                                    <th style="border: 1px solid black; padding: 3px; width: 40%;">Código</th>
+                                    <th style="border: 1px solid black; padding: 3px; width: 60%;">Descripción</th>
+                                </tr>
+                                <tr>
+                                    <td style="border: 1px solid black; padding: 3px;">
+                                        <t t-if="o.l10n_co_edi_description_code_credit">
+                                            <span t-out="dict(o._fields['l10n_co_edi_description_code_credit'].selection).get(o.l10n_co_edi_description_code_credit, '')"/>
+                                        </t>
+                                    </td>
+                                    <td style="border: 1px solid black; padding: 3px;">
+                                        <t t-if="o.narration"><span t-field="o.narration"/></t>
+                                        <t t-elif="o.ref"><span t-field="o.ref"/></t>
+                                    </td>
+                                </tr>
+                            </table>
+                        </t>
+
+                        <!-- Secciones exclusivas para Nota Débito -->
+                        <t t-if="o.move_type == 'out_invoice' and o.journal_id.l10n_co_edi_debit_note">
+                            <!-- Documentos Relacionados (referencia a factura original) -->
+                            <table t-if="o.debit_origin_id" style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 3px;">
+                                <tr style="background-color: #003366; color: white;">
+                                    <th colspan="5" style="border: 1px solid black; padding: 4px; text-align: center; font-weight: bold;">DOCUMENTOS RELACIONADOS</th>
+                                </tr>
+                                <tr>
+                                    <td style="border: 1px solid black; padding: 3px; font-weight: bold; width: 10%;">No.:</td>
+                                    <td style="border: 1px solid black; padding: 3px; width: 25%;"><span t-field="o.debit_origin_id.name"/></td>
+                                    <td style="border: 1px solid black; padding: 3px; font-weight: bold; width: 8%;">Tipo:</td>
+                                    <td style="border: 1px solid black; padding: 3px; width: 37%;">Factura</td>
+                                    <td style="border: 1px solid black; padding: 3px; width: 20%;">
+                                        <strong>Fecha:</strong> <span t-field="o.debit_origin_id.invoice_date"/>
+                                    </td>
+                                </tr>
+                                <tr t-if="o.debit_origin_id.l10n_co_edi_cufe_cude_ref">
+                                    <td style="border: 1px solid black; padding: 3px; font-weight: bold;">CUFE / CUDE:</td>
+                                    <td colspan="4" style="border: 1px solid black; padding: 3px; font-size: 8px; word-break: break-all;">
+                                        <span t-field="o.debit_origin_id.l10n_co_edi_cufe_cude_ref"/>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Conceptos de la Nota Débito -->
+                            <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 3px;">
+                                <tr style="background-color: #003366; color: white;">
+                                    <th colspan="2" style="border: 1px solid black; padding: 4px; text-align: center; font-weight: bold;">CONCEPTOS DE LA NOTA</th>
+                                </tr>
+                                <tr style="background-color: #e0e0e0;">
+                                    <th style="border: 1px solid black; padding: 3px; width: 40%;">Código</th>
+                                    <th style="border: 1px solid black; padding: 3px; width: 60%;">Descripción</th>
+                                </tr>
+                                <tr>
+                                    <td style="border: 1px solid black; padding: 3px;">
+                                        <t t-if="o.l10n_co_edi_description_code_debit">
+                                            <span t-out="dict(o._fields['l10n_co_edi_description_code_debit'].selection).get(o.l10n_co_edi_description_code_debit, '')"/>
+                                        </t>
+                                    </td>
+                                    <td style="border: 1px solid black; padding: 3px;">
+                                        <t t-if="o.narration"><span t-field="o.narration"/></t>
+                                        <t t-elif="o.ref"><span t-field="o.ref"/></t>
+                                    </td>
+                                </tr>
+                            </table>
+                        </t>
 
                         <!-- FIX 8: Tabla de líneas con columnas FTE e ICA agregadas -->
                         <table style="width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 1px;">
@@ -148,29 +242,29 @@
                                         <strong>Valor en Letras</strong><br/>
                                         <span t-field="o.total_letras" style="text-transform: uppercase;"/>
                                     </div>
-                                    <!-- Orden de compra recuadrado -->
-                                    <div t-if="o.invoice_origin" style="margin-top: 2px; border: 1px solid black; padding: 3px;">
+                                    <!-- Orden de compra recuadrado (solo facturas) -->
+                                    <div t-if="o.ref and o.move_type == 'out_invoice' and not o.journal_id.l10n_co_edi_debit_note" style="margin-top: 2px; border: 1px solid black; padding: 3px;">
                                         <strong>ORDEN DE COMPRA: </strong>
-                                        <span t-field="o.invoice_origin"/>
-                                    </div>
-                                    <!-- Remisión recuadrado -->
-                                    <div t-if="o.ref" style="margin-top: 2px; border: 1px solid black; padding: 3px;">
-                                        <strong>REMISIÓN: </strong>
                                         <span t-field="o.ref"/>
                                     </div>
-                                    <!-- Texto legal art. 774 -->
-                                    <div style="border: 1px solid black; padding: 4px; margin-top: 2px; font-size: 9px;">
+                                    <!-- Remisión recuadrado (solo facturas) -->
+                                    <div t-if="o.invoice_origin and o.move_type == 'out_invoice' and not o.journal_id.l10n_co_edi_debit_note" style="margin-top: 2px; border: 1px solid black; padding: 3px;">
+                                        <strong>REMISIÓN: </strong>
+                                        <span t-field="o.invoice_origin"/>
+                                    </div>
+                                    <!-- Texto legal art. 774 (solo facturas) -->
+                                    <div t-if="o.move_type == 'out_invoice' and not o.journal_id.l10n_co_edi_debit_note" style="border: 1px solid black; padding: 4px; margin-top: 2px; font-size: 9px;">
                                         <div>Esta factura se asimila en todos sus efectos a la letra de cambio según artículo 774 del Código de Comercio.El incumplimiento en el pago de esta facturaen la fecha de vencimiento generará interés de mora a la tasa mas alta autorizada por la Ley</div>
                                     </div>
-                                    <!-- Favor consignar cuentas recuadrado -->
-                                    <div style="border: 1px solid black; padding: 4px; margin-top: 2px; font-size: 9px;">
+                                    <!-- Favor consignar cuentas recuadrado (facturas y notas débito, NO notas crédito) -->
+                                    <div t-if="o.move_type != 'out_refund'" style="border: 1px solid black; padding: 4px; margin-top: 2px; font-size: 9px;">
                                         <strong>Favor consignar en las cuentas:</strong><br/>
                                         <t t-foreach="o.company_id.partner_id.bank_ids" t-as="bank">
                                             <span t-out="bank.bank_id.name or ''"/> Cta Corriente No. <span t-out="bank.acc_number"/><br/>
                                         </t>
                                     </div>
-                                    <!-- Garantías -->
-                                    <div t-if="o.company_id.website" style="border: 1px solid black; padding: 4px; margin-top: 2px; font-size: 9px;">
+                                    <!-- Garantías (facturas y notas débito, NO notas crédito) -->
+                                    <div t-if="o.company_id.website and o.move_type != 'out_refund'" style="border: 1px solid black; padding: 4px; margin-top: 2px; font-size: 9px;">
                                         <strong>Garantías: </strong><span t-field="o.company_id.website"/>
                                     </div>
                                 </td>
@@ -215,7 +309,7 @@
                                             <t t-if="tline.tax_line_id.amount &lt; 0 and 'fte' in (tline.tax_line_id.name or '').lower()">
                                                 <t t-set="retefuente" t-value="retefuente + abs(tline.amount_currency)"/>
                                             </t>
-                                            <t t-if="tline.tax_line_id.amount &lt; 0 and 'reteiva' in (tline.tax_line_id.name or '').lower()">
+                                            <t t-if="tline.tax_line_id.amount &lt; 0 and ('rteiva' in (tline.tax_line_id.name or '').lower() or 'rtevat' in (tline.tax_line_id.name or '').lower())">
                                                 <t t-set="reteiva" t-value="reteiva + abs(tline.amount_currency)"/>
                                             </t>
                                             <t t-if="tline.tax_line_id.amount &lt; 0 and 'ica' in (tline.tax_line_id.name or '').lower()">
@@ -241,7 +335,13 @@
                                             </td>
                                         </tr>
                                         <tr>
-                                            <th style="border: 1px solid black; padding: 3px; background-color: #e0e0e0;"><strong>TOTAL FACTURA</strong></th>
+                                            <th style="border: 1px solid black; padding: 3px; background-color: #e0e0e0;">
+                                                <strong>
+                                                    <t t-if="o.move_type == 'out_refund'">TOTAL NOTA CRÉDITO</t>
+                                                    <t t-elif="o.journal_id.l10n_co_edi_debit_note">TOTAL NOTA DÉBITO</t>
+                                                    <t t-else="">TOTAL FACTURA</t>
+                                                </strong>
+                                            </th>
                                             <td style="border: 1px solid black; padding: 3px; text-align: right; background-color: #e0e0e0;">
                                                 <strong>
                                                     <span t-out="o.amount_untaxed + iva_total - retefuente - reteiva - reteica" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
@@ -251,8 +351,14 @@
                                     </table>
                                     <!-- Representación Gráfica header -->
                                     <div style="border: 1px solid black; padding: 4px; text-align: center; margin-top: 3px; font-size: 9px;">
-                                        <strong>Representación Gráfica de la Factura de Venta Electrónica</strong>
+                                        <strong>
+                                            <t t-if="o.move_type == 'out_refund'">Representación Gráfica de la Nota de Crédito Electrónica</t>
+                                            <t t-elif="o.journal_id.l10n_co_edi_debit_note">Representación Gráfica de la Nota de Débito Electrónica</t>
+                                            <t t-else="">Representación Gráfica de la Factura de Venta Electrónica</t>
+                                        </strong>
                                     </div>
+                                    <!-- Obtener valores DIAN (CUFE/QR) -->
+                                    <t t-set="dian_values" t-value="o._l10n_co_dian_get_extra_invoice_report_values() if o.l10n_co_edi_cufe_cude_ref else {}"/>
                                     <!-- Fecha/Hora y Medios de pago a la IZQUIERDA, QR a la DERECHA -->
                                     <table style="width: 100%; font-size: 9px;">
                                         <tr>
@@ -267,10 +373,9 @@
                                                 </div>
                                             </td>
                                             <td style="vertical-align: top; text-align: right; width: 130px;">
-                                                <!-- QR Code -->
-                                                <t t-set="qr_code" t-value="o.l10n_co_edi_qr_code if 'l10n_co_edi_qr_code' in o._fields else False"/>
-                                                <t t-if="qr_code">
-                                                    <img t-att-src="'data:image/png;base64,' + qr_code" style="width: 110px; height: 110px;" alt="QR"/>
+                                                <!-- QR Code desde DIAN -->
+                                                <t t-if="dian_values.get('barcode_src')">
+                                                    <img t-att-src="dian_values.get('barcode_src')" style="width: 110px; height: 110px;" alt="QR"/>
                                                 </t>
                                                 <t t-else="">
                                                     <div style="width: 100px; height: 100px; border: 1px solid #ccc; margin: 0 0 0 auto; line-height: 100px; color: #999; font-size: 10px; text-align: center;">QR Code</div>
@@ -278,6 +383,11 @@
                                             </td>
                                         </tr>
                                     </table>
+                                    <!-- CUFE/CUDE -->
+                                    <div t-if="dian_values.get('identifier')" style="font-size: 8px; margin-top: 3px; word-break: break-all;">
+                                        <strong><t t-out="o.l10n_co_dian_identifier_type.upper() if o.l10n_co_dian_identifier_type else 'CUFE'"/>: </strong>
+                                        <span t-out="dian_values.get('identifier')"/>
+                                    </div>
                                 </td>
                             </tr>
                         </table>

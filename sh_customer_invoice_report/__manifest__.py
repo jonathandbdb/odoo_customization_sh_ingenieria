@@ -7,7 +7,7 @@
     "summary": "Reporte personalizado de Factura de Venta para SH Ingeniería",
 
     "description": """
-Reporte personalizado de Factura de Venta Electrónica / Nota Crédito
+Reporte personalizado de Factura de Venta Electrónica / Nota Crédito / Nota Débito
 para SH Ingeniería.
 - Header con logo corporativo y número de documento
 - Footer con datos de contacto
@@ -27,6 +27,8 @@ para SH Ingeniería.
 
     "depends": [
         "account",
+        "account_debit_note",
+        "l10n_co_edi",
         "sh_base_config",
     ],
 
