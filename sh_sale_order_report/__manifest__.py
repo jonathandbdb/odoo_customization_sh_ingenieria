@@ -16,9 +16,8 @@ Reporte personalizado de Cotización (sale.order) para SH Ingeniería.
 - Pie de página con datos de contacto de la compañía
     """,
     "category": "Sales/Reporting",
-    "author": "NEXIT",
-    "website": "https://www.nexit.com.uy",
-    "license": "OPL-1",
+    "author": "CONECTA",
+    "website": "https://www.conecta.sh",
     "depends": [
         "sale_management",
         "sh_base_config",
