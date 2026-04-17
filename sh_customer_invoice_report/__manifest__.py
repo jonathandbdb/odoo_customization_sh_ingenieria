@@ -33,6 +33,7 @@ para SH Ingeniería.
     ],
 
     "data": [
+        "views/res_company_views.xml",
         "report/report_layouts.xml",
         "report/report_invoice.xml",
         "report/report_actions.xml",
