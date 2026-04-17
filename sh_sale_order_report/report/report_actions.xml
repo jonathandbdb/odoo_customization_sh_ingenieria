@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Se reemplaza el reporte estándar de Cotización/Orden de Venta de Odoo para
+         que use la plantilla personalizada SH. De esta forma, tanto el botón "Imprimir"
+         como el envío por email (mail.template con report_template_ids apuntando a
+         sale.action_report_saleorder) generan el PDF con el formato corporativo. -->
+    <record id="sale.action_report_saleorder" model="ir.actions.report">
+        <field name="name">Cotización / Orden de Venta (SH)</field>
+        <field name="report_name">sh_sale_order_report.report_sh_sale_order_document</field>
+        <field name="report_file">sh_sale_order_report.report_sh_sale_order_document</field>
+        <field name="paperformat_id" ref="sh_sale_order_report.paperformat_sh_sale_order"/>
+    </record>
+
+</odoo>
+<!-- vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4-->
