@@ -47,19 +47,18 @@
                     <div style="padding: 8px 10px; font-size: 16px; font-weight: bold; text-align: center; border: 1px solid #003366; border-top: none;">
                         No. <span t-field="o.name"/>
                     </div>
-                    <!-- Texto resolución DIAN + Actividades Económicas (centrado) -->
-                    <div style="font-size: 9px; margin-top: 6px; line-height: 1.4; text-align: center;">
+                    <!-- Texto resolución DIAN + Actividades Económicas (justificado) -->
+                    <div style="font-size: 9px; margin-top: 6px; line-height: 1.4; text-align: justify;">
                         <t t-if="o.journal_id.l10n_co_edi_dian_authorization_number and o.move_type == 'out_invoice'">
-                            <div>Documento Oficial de Autorización de Numeración Facturación Electrónica DIAN</div>
-                            <div>No. <span t-field="o.journal_id.l10n_co_edi_dian_authorization_number"/>
+                            <div>Documento Oficial de Autorización de Numeración Facturación Electrónica DIAN
+                                No. <span t-field="o.journal_id.l10n_co_edi_dian_authorization_number"/>
                                 del <span t-field="o.journal_id.l10n_co_edi_dian_authorization_date"/>
                                 que habilita desde <span t-out="o.journal_id.l10n_co_edi_min_range_number"/>
-                            </div>
-                            <div>hasta <span t-out="o.journal_id.l10n_co_edi_max_range_number"/>
+                                hasta <span t-out="o.journal_id.l10n_co_edi_max_range_number"/>
                                 Vence el <span t-field="o.journal_id.l10n_co_edi_dian_authorization_end_date"/>.</div>
                         </t>
-                        <div t-if="o.company_id.invoice_economic_activities" style="margin-top: 2px;">
-                            <span t-field="o.company_id.invoice_economic_activities"/>
+                        <div t-if="o.company_id.l10n_co_edi_header_actividad_economica" style="margin-top: 2px;">
+                            <span t-field="o.company_id.l10n_co_edi_header_actividad_economica"/>
                         </div>
                     </div>
                 </td>

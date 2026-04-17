@@ -23,6 +23,10 @@ para SH Ingeniería.
 
     "category": "Accounting/Reporting",
 
+    "author": "NEXIT",
+
+    "website": "https://www.nexit.com.uy",
+
     "license": "OPL-1",
 
     "depends": [
@@ -33,7 +37,6 @@ para SH Ingeniería.
     ],
 
     "data": [
-        "views/res_company_views.xml",
         "report/report_layouts.xml",
         "report/report_invoice.xml",
         "report/report_actions.xml",

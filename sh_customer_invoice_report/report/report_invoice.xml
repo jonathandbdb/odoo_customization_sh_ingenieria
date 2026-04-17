@@ -392,29 +392,6 @@
                             </tr>
                         </table>
 
-                        <!-- Datos de pagos realizados (si aplica) -->
-                        <div t-if="print_with_payments">
-                            <t t-set="payments_vals" t-value="o.sudo().invoice_payments_widget and o.sudo().invoice_payments_widget.get('content', [])"/>
-                            <div t-if="payments_vals" style="margin-top: 10px;">
-                                <strong>Pagos realizados:</strong>
-                                <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 3px;">
-                                    <tr>
-                                        <th style="border: 1px solid black; padding: 3px;">Fecha</th>
-                                        <th style="border: 1px solid black; padding: 3px;">Referencia</th>
-                                        <th style="border: 1px solid black; padding: 3px; text-align: right;">Monto</th>
-                                    </tr>
-                                    <tr t-foreach="payments_vals" t-as="payment">
-                                        <td style="border: 1px solid black; padding: 3px;"><span t-out="payment.get('date', '')"/></td>
-                                        <td style="border: 1px solid black; padding: 3px;"><span t-out="payment.get('ref', '')"/></td>
-                                        <td style="border: 1px solid black; padding: 3px; text-align: right;"><span t-out="payment.get('amount', 0)" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/></td>
-                                    </tr>
-                                </table>
-                                <div style="margin-top: 3px;">
-                                    <strong>Saldo pendiente: </strong>
-                                    <span t-field="o.amount_residual" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
-                                </div>
-                            </div>
-                        </div>
                     </t>
 
                     <!-- Para facturas de proveedor / otros tipos, usar el layout estándar -->
