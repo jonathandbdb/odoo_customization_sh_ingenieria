@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        noupdate="0" para forzar la sobreescritura de las plantillas DIAN
+        creadas por l10n_co_dian (están registradas con noupdate=True vía
+        _create_dian_mail_templates, ver enterprise/l10n_co_dian/models/mail_template.py).
+
+        En Colombia, Odoo selecciona estas plantillas en account.move._get_mail_template()
+        cuando country_code == 'CO':
+            * l10n_co_dian.email_template_edi_invoice     -> Factura y Nota Débito
+            * l10n_co_dian.email_template_edi_credit_note -> Nota Crédito
+    -->
+    <data noupdate="0">
+
+        <!-- ================================================================
+             Plantilla QWeb reutilizable con el cuerpo del correo.
+             Se referencia desde cada mail.template vía <t t-call="..."/>.
+             ================================================================ -->
+        <template id="edi_mail_body" name="SH Ingeniería EDI Mail Body">
+            <div style="margin:0; padding:0; background-color:#ffffff;">
+                <table align="center" border="0" cellpadding="0" cellspacing="0" width="640"
+                       style="border-collapse:collapse; background-color:#ffffff;
+                              font-family:Arial, Helvetica, sans-serif; color:#333333;">
+
+                    <!-- Logo institucional desde res.company.logo -->
+                    <tr>
+                        <td align="center" style="padding:25px 20px 15px 20px;">
+                            <t t-if="object.company_id.logo">
+                                <img t-att-src="'data:image/png;base64,%s' % object.company_id.logo.decode('ascii')"
+                                     alt="SH INGENIERIA SAS"
+                                     style="max-height:110px; max-width:360px; height:auto; width:auto;"/>
+                            </t>
+                        </td>
+                    </tr>
+
+                    <!-- Saludo al cliente -->
+                    <tr>
+                        <td align="center" style="padding:10px 30px 5px 30px; font-size:14px;">
+                            Estimado(a) <strong t-out="object.partner_id.name or ''">Cliente</strong>
+                        </td>
+                    </tr>
+
+                    <!-- Texto introductorio -->
+                    <tr>
+                        <td align="center" style="padding:10px 40px 15px 40px; font-size:13px; line-height:1.5;">
+                            Ha recibido un <strong>DOCUMENTO ELECTRÓNICO</strong> por parte de
+                            <strong t-out="object.company_id.name or ''">SH INGENIERIA SAS</strong>;
+                            envío que se efectúa mediante nuestros sistemas de Facturación Electrónica.
+                        </td>
+                    </tr>
+
+                    <!-- Bloque de datos del documento -->
+                    <tr>
+                        <td align="center" style="padding:10px 30px 15px 30px; font-size:14px; line-height:1.7;">
+                            <div>
+                                <strong>TIPO DE DOCUMENTO:</strong>
+                                <t t-if="object.move_type == 'out_refund'">Nota Crédito</t>
+                                <t t-elif="object.move_type == 'out_invoice' and object.debit_origin_id">Nota Débito</t>
+                                <t t-elif="object.move_type == 'out_invoice'">Factura</t>
+                                <t t-else=""><t t-out="object.type_name or ''"/></t>
+                            </div>
+                            <div>
+                                <strong>NÚMERO DE DOCUMENTO:</strong>
+                                <t t-out="object.name or ''">INV/2026/00001</t>
+                            </div>
+                            <div>
+                                <strong>FECHA DE EMISIÓN:</strong>
+                                <t t-out="object.invoice_date or ''">2026-01-01</t>
+                            </div>
+                            <div>
+                                <strong>VALOR TOTAL:</strong>
+                                <t t-out="format_amount(object.amount_total, object.currency_id) or ''">$ 0,00</t>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Adjuntos -->
+                    <tr>
+                        <td align="center" style="padding:15px 30px 5px 30px; font-size:13px;">
+                            Adjuntos al correo se encuentran los siguientes documentos:
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding:0 30px 20px 30px; font-size:13px; line-height:1.8;">
+                            <div>• Representación gráfica del comprobante con extensión <strong>.PDF</strong></div>
+                            <div>• Comprobante electrónico con extensión <strong>.XML</strong></div>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:0 30px;">
+                            <hr style="border:none; border-top:1px solid #dddddd; margin:10px 0;"/>
+                        </td>
+                    </tr>
+
+                    <!-- Pie de página legal -->
+                    <tr>
+                        <td align="center" style="padding:15px 40px 30px 40px; font-size:11px;
+                                                  color:#666666; line-height:1.5; text-align:justify;">
+                            Este E-mail ha sido enviado automáticamente por favor no responder a esta cuenta,
+                            de requerir cualquier aclaratoria o información adicional debe comunicarse
+                            directamente a la dirección de email o teléfono de
+                            <t t-out="object.company_id.name or ''">SH INGENIERIA SAS</t>,
+                            <t t-out="object.company_id.vat or ''">NIT</t>,
+                            <t t-out="object.company_id.phone or ''">Teléfono</t>,
+                            <t t-out="object.company_id.email or ''">Email</t>.
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </template>
+
+        <!-- ================================================================
+             Plantilla DIAN para FACTURAS (out_invoice) y NOTAS DÉBITO
+             xmlid: l10n_co_dian.email_template_edi_invoice
+             ================================================================ -->
+        <record id="l10n_co_dian.email_template_edi_invoice" model="mail.template">
+            <field name="name">Invoice (DIAN): Sending - SH Ingeniería</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="email_from">&quot;SH INGENIERIA SAS&quot; &lt;notificacioneserp@shingenieria.com&gt;</field>
+            <field name="reply_to">contabilidad@shingenieria.com</field>
+            <field name="partner_to" eval="False"/>
+            <field name="use_default_to" eval="True"/>
+            <field name="subject">{{ object.company_id.partner_id._get_vat_without_verification_code() }};{{ object.company_id.name }};{{ object.name }};{{ (object.l10n_co_edi_type or '') }};{{ object.company_id.partner_id.l10n_co_edi_commercial_name or object.company_id.name }}</field>
+            <field name="description">Envío de Factura Electrónica / Nota Débito (DIAN) - SH Ingeniería SAS</field>
+            <field name="body_html" type="html">
+                <t t-call="sh_l10n_co_edi_mail_template.edi_mail_body"/>
+            </field>
+            <field name="report_template_ids" eval="[]"/>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- ================================================================
+             Plantilla DIAN para NOTAS CRÉDITO (out_refund)
+             xmlid: l10n_co_dian.email_template_edi_credit_note
+             ================================================================ -->
+        <record id="l10n_co_dian.email_template_edi_credit_note" model="mail.template">
+            <field name="name">Credit Note (DIAN): Sending - SH Ingeniería</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="email_from">&quot;SH INGENIERIA SAS&quot; &lt;notificacioneserp@shingenieria.com&gt;</field>
+            <field name="reply_to">contabilidad@shingenieria.com</field>
+            <field name="partner_to" eval="False"/>
+            <field name="use_default_to" eval="True"/>
+            <field name="subject">{{ object.company_id.partner_id._get_vat_without_verification_code() }};{{ object.company_id.name }};{{ object.name }};{{ (object.l10n_co_edi_type or '') }};{{ object.company_id.partner_id.l10n_co_edi_commercial_name or object.company_id.name }}</field>
+            <field name="description">Envío de Nota Crédito Electrónica (DIAN) - SH Ingeniería SAS</field>
+            <field name="body_html" type="html">
+                <t t-call="sh_l10n_co_edi_mail_template.edi_mail_body"/>
+            </field>
+            <field name="report_template_ids" eval="[]"/>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- ================================================================
+             Plantilla fallback del core (account.email_template_edi_invoice).
+             Se mantiene sobrescrita por si el flujo escapa a la selección DIAN
+             (compañías sin country_code='CO' o fallback de _get_mail_template).
+             ================================================================ -->
+        <record id="account.email_template_edi_invoice" model="mail.template">
+            <field name="name">Invoice: Sending (SH Ingeniería)</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="email_from">&quot;SH INGENIERIA SAS&quot; &lt;notificacioneserp@shingenieria.com&gt;</field>
+            <field name="reply_to">contabilidad@shingenieria.com</field>
+            <field name="partner_to" eval="False"/>
+            <field name="use_default_to" eval="True"/>
+            <field name="subject">{{ object.company_id.partner_id._get_vat_without_verification_code() }};{{ object.company_id.name }};{{ object.name }};{{ (object.l10n_co_edi_type or '') }};{{ object.company_id.partner_id.l10n_co_edi_commercial_name or object.company_id.name }}</field>
+            <field name="description">Envío de comprobantes electrónicos - SH Ingeniería SAS</field>
+            <field name="body_html" type="html">
+                <t t-call="sh_l10n_co_edi_mail_template.edi_mail_body"/>
+            </field>
+            <field name="report_template_ids" eval="[]"/>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+    </data>
+
+    <!--
+        Normalización post-carga: limpia traducciones (es_ES, es_CO, ...) de las
+        plantillas custom para que el body_html/subject/nombre custom aplique en
+        todos los idiomas. Se ejecuta en cada install/upgrade del módulo.
+    -->
+    <data>
+        <function model="mail.template" name="_sh_normalize_edi_templates"/>
+    </data>
+</odoo>
+<!-- vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4-->
