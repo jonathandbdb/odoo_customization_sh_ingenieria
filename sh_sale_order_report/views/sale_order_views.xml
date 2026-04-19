@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vista form: agregar campo Garantía en grupo Shipping de la pestaña Otra información -->
+    <record id="view_order_form_sh_warranty" model="ir.ui.view">
+        <field name="name">sale.order.form.sh.warranty</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='other_information']//group[@name='sale_shipping']" position="inside">
+                <field name="sh_warranty"/>
+            </xpath>
+            <!-- Aspectos técnicos: pestaña dedicada en el form de la cotización -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Aspectos Técnicos" name="sh_technical_aspects">
+                    <field name="sh_technical_aspects"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista form de res.company: agregar campo de aspectos técnicos por defecto -->
+    <record id="view_company_form_sh_technical_aspects" model="ir.ui.view">
+        <field name="name">res.company.form.sh.technical.aspects</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Aspectos Técnicos">
+                    <field name="sh_technical_aspects" nolabel="1" colspan="2"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
+<!-- vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4-->

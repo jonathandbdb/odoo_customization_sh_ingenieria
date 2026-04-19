@@ -49,26 +49,26 @@
                         </td>
                     </tr>
 
-                    <!-- Bloque de datos del documento -->
+                    <!-- Bloque de datos del documento (todo en negrita) -->
                     <tr>
-                        <td align="center" style="padding:10px 30px 15px 30px; font-size:14px; line-height:1.7;">
+                        <td align="center" style="padding:10px 30px 15px 30px; font-size:14px; line-height:1.7; font-weight:bold;">
                             <div>
-                                <strong>TIPO DE DOCUMENTO:</strong>
+                                TIPO DE DOCUMENTO:
                                 <t t-if="object.move_type == 'out_refund'">Nota Crédito</t>
                                 <t t-elif="object.move_type == 'out_invoice' and object.debit_origin_id">Nota Débito</t>
                                 <t t-elif="object.move_type == 'out_invoice'">Factura</t>
                                 <t t-else=""><t t-out="object.type_name or ''"/></t>
                             </div>
                             <div>
-                                <strong>NÚMERO DE DOCUMENTO:</strong>
+                                NÚMERO DE DOCUMENTO:
                                 <t t-out="object.name or ''">INV/2026/00001</t>
                             </div>
                             <div>
-                                <strong>FECHA DE EMISIÓN:</strong>
+                                FECHA DE EMISIÓN:
                                 <t t-out="object.invoice_date or ''">2026-01-01</t>
                             </div>
                             <div>
-                                <strong>VALOR TOTAL:</strong>
+                                VALOR TOTAL:
                                 <t t-out="format_amount(object.amount_total, object.currency_id) or ''">$ 0,00</t>
                             </div>
                         </td>
@@ -100,10 +100,12 @@
                             Este E-mail ha sido enviado automáticamente por favor no responder a esta cuenta,
                             de requerir cualquier aclaratoria o información adicional debe comunicarse
                             directamente a la dirección de email o teléfono de
-                            <t t-out="object.company_id.name or ''">SH INGENIERIA SAS</t>,
+                            <strong><t t-out="object.company_id.name or ''">SH INGENIERIA SAS</t>,
                             <t t-out="object.company_id.vat or ''">NIT</t>,
-                            <t t-out="object.company_id.phone or ''">Teléfono</t>,
-                            <t t-out="object.company_id.email or ''">Email</t>.
+                            <t t-out="object.company_id.phone or ''">Teléfono</t>,</strong>
+                            <a t-att-href="'mailto:%s' % (object.company_id.email or '')"
+                               t-out="object.company_id.email or ''"
+                               style="color:#1f6feb; text-decoration:underline;">Email</a>.
                         </td>
                     </tr>
                 </table>

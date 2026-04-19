@@ -18,23 +18,84 @@ MESES = {
 class SaleOrder(models.Model):
     _inherit = "sale.order"
 
-    # Primera sección del presupuesto, usada como título central del reporte
+    # Primera sección del presupuesto (usada en el encabezado/cabecera de archivo)
     sh_first_section_name = fields.Char(
         string="First Section",
         compute="_compute_sh_first_section_name",
     )
 
+    # Primera nota del presupuesto, usada como título central del reporte
+    sh_first_note_name = fields.Char(
+        string="First Note",
+        compute="_compute_sh_first_note_name",
+    )
+
+    # Garantía configurable mostrada en las condiciones comerciales del reporte
+    sh_warranty = fields.Char(
+        string="Garantía",
+        default="",
+        help="Texto de la garantía aplicable a la cotización.",
+    )
+
+    # Aspectos técnicos editables por cotización; se inicializan desde el
+    # campo equivalente de la compañía si está configurado.
+    sh_technical_aspects = fields.Html(
+        string="Technical Aspects",
+        help="Texto con los aspectos técnicos específicos de esta cotización.",
+    )
+
+    @api.model
+    def default_get(self, fields_list):
+        """
+        Inicializar `sh_technical_aspects` con el valor configurado en la
+        compañía. Se hace en `default_get` (en lugar de `default=`) para que
+        la lectura de `res.company.sh_technical_aspects` ocurra sólo al crear
+        cotizaciones desde la interfaz, evitando errores cuando el campo aún
+        no existe en la columna durante actualizaciones de módulo.
+        """
+        defaults = super().default_get(fields_list)
+        if "sh_technical_aspects" in fields_list and not defaults.get("sh_technical_aspects"):
+            company = self.env.company
+            if company and "sh_technical_aspects" in company._fields:
+                defaults["sh_technical_aspects"] = company.sh_technical_aspects
+        return defaults
+
     @api.depends("order_line", "order_line.display_type", "order_line.name", "order_line.sequence")
     def _compute_sh_first_section_name(self):
         """
         Obtener el nombre de la primera sección (display_type='line_section') del
-        presupuesto, para imprimirlo como título central en el reporte.
+        presupuesto, usado en el encabezado del archivo del reporte.
         """
         for order in self:
             sections = order.order_line.sorted("sequence").filtered(
                 lambda l: l.display_type == "line_section"
             )
             order.sh_first_section_name = sections[:1].name if sections else ""
+
+    @api.depends("order_line", "order_line.display_type", "order_line.name", "order_line.sequence")
+    def _compute_sh_first_note_name(self):
+        """
+        Obtener el nombre de la primera nota (display_type='line_note') del
+        presupuesto, usada como título central del reporte. Si no hay notas,
+        no se imprime título.
+        """
+        for order in self:
+            notes = order.order_line.sorted("sequence").filtered(
+                lambda l: l.display_type == "line_note"
+            )
+            order.sh_first_note_name = notes[:1].name if notes else ""
+
+    def _get_first_note_line_id(self):
+        """
+        Devolver el ID de la primera línea tipo nota del presupuesto. Se
+        utiliza desde el reporte para omitir esa línea dentro de la tabla,
+        evitando que aparezca duplicada (ya se muestra como título central).
+        """
+        self.ensure_one()
+        notes = self.order_line.sorted("sequence").filtered(
+            lambda l: l.display_type == "line_note"
+        )
+        return notes[:1].id if notes else False
 
     def _get_date_format(self, dt_value):
         """

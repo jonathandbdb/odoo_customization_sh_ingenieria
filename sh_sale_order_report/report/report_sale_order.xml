@@ -46,7 +46,7 @@
                         <!-- Encabezado: título + fecha (izq) y logo (der) -->
                         <div class="row mb-3">
                             <div class="col-7">
-                                <div style="font-size: 16px; font-weight: bold; color: #e67e22;">
+                                <div style="font-size: 16px; font-weight: bold; color: #2E86C1;">
                                     Cotizacion N. <span t-field="o.name"/>
                                 </div>
                                 <div style="font-size: 10px; margin-top: 2px;">
@@ -61,9 +61,14 @@
                             </div>
                         </div>
 
-                        <!-- Datos del cliente -->
-                        <div style="font-size: 16px; font-weight: bold; margin-bottom: 2px;">
-                            <span t-field="o.partner_id.name"/>
+                        <!-- Datos del cliente: incluye empresa padre cuando el partner es un contacto hijo -->
+                        <div style="font-size: 16px; font-weight: bold; margin-bottom: 2px; color: #2E86C1;">
+                            <t t-if="o.partner_id.parent_id">
+                                <span t-field="o.partner_id.parent_id.name"/>, <span t-field="o.partner_id.name"/>
+                            </t>
+                            <t t-else="">
+                                <span t-field="o.partner_id.name"/>
+                            </t>
                         </div>
                         <div style="font-size: 10px; line-height: 1.4;">
                             <div t-if="o.partner_id.street"><span t-field="o.partner_id.street"/></div>
@@ -75,8 +80,8 @@
                         <!-- Fila: título central + totales -->
                         <div class="row mt-3 mb-2">
                             <div class="col-7 text-center" style="align-self: center;">
-                                <div t-if="o.sh_first_section_name" style="font-size: 20px; font-weight: bold; color: #e67e22;">
-                                    <span t-out="o.sh_first_section_name"/>
+                                <div t-if="o.sh_first_note_name" style="font-size: 20px; font-weight: bold; color: #2E86C1;">
+                                    <span t-out="o.sh_first_note_name"/>
                                 </div>
                             </div>
                             <div class="col-5">
@@ -120,13 +125,14 @@
                             </thead>
                             <tbody>
                                 <t t-set="blocks" t-value="o._get_section_blocks()"/>
+                                <t t-set="first_note_id" t-value="o._get_first_note_line_id()"/>
                                 <t t-foreach="blocks" t-as="block">
                                     <t t-if="block['section']">
                                         <tr>
-                                            <td colspan="5" style="font-size: 13px; font-weight: bold; color: #e67e22;">
+                                            <td colspan="5" style="font-size: 13px; font-weight: bold; color: #89B300;">
                                                 <span t-out="block['section'].name"/>
                                             </td>
-                                            <td class="text-end" style="font-size: 11px; color: #e67e22;">
+                                            <td class="text-end" style="font-size: 11px; color: #89B300;">
                                                 <span style="margin-right: 8px;">Vr. Capítulo</span>
                                                 <strong>
                                                     <span t-out="block['subtotal']"
@@ -137,11 +143,13 @@
                                     </t>
                                     <t t-foreach="block['lines']" t-as="line">
                                         <t t-if="line.display_type == 'line_note'">
-                                            <tr>
-                                                <td colspan="6" style="font-style: italic; color: #555;">
-                                                    <span t-field="line.name"/>
-                                                </td>
-                                            </tr>
+                                            <t t-if="line.id != first_note_id">
+                                                <tr>
+                                                    <td colspan="6" style="font-style: italic; color: #555;">
+                                                        <span t-field="line.name"/>
+                                                    </td>
+                                                </tr>
+                                            </t>
                                         </t>
                                         <t t-elif="not line.display_type">
                                             <tr>
@@ -164,8 +172,8 @@
                             </tbody>
                         </table>
 
-                        <!-- Separador naranja -->
-                        <hr style="border: none; border-top: 2px solid #e67e22; margin: 20px 0 10px 0;"/>
+                        <!-- Separador con azul corporativo -->
+                        <hr style="border: none; border-top: 2px solid #2E86C1; margin: 20px 0 10px 0;"/>
 
                         <!-- Condiciones comerciales + firma vendedor -->
                         <div class="row" style="font-size: 10px;">
@@ -196,7 +204,7 @@
                                 <div class="row">
                                     <div class="col-5">Garantía</div>
                                     <div class="col-7" style="border-bottom: 1px solid #999;">
-                                        12 meses para equipos suministrados
+                                        <t t-if="o.sh_warranty"><span t-out="o.sh_warranty"/></t>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -233,6 +241,16 @@
                             </div>
                             <div style="text-align: justify;">
                                 <span t-field="o.note"/>
+                            </div>
+                        </div>
+
+                        <!-- Aspectos Técnicos -->
+                        <div t-if="o.sh_technical_aspects" style="margin-top: 16px; font-size: 10px;">
+                            <div style="font-size: 12px; font-weight: bold; color: #003366; margin-bottom: 4px;">
+                                Aspectos Técnicos
+                            </div>
+                            <div style="text-align: justify;">
+                                <span t-field="o.sh_technical_aspects"/>
                             </div>
                         </div>
 

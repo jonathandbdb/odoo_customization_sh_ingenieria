@@ -24,6 +24,7 @@ Reporte personalizado de Cotización (sale.order) para SH Ingeniería.
     ],
     "data": [
         "data/paperformat.xml",
+        "views/sale_order_views.xml",
         "report/report_sale_order.xml",
         "report/report_actions.xml",
     ],
