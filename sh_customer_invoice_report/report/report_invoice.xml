@@ -172,7 +172,7 @@
                             </thead>
                             <tbody>
                                 <t t-set="line_num" t-value="0"/>
-                                <t t-foreach="o.invoice_line_ids.sorted(key=lambda l: l.sequence)" t-as="line">
+                                <t t-foreach="o.invoice_line_ids.sorted(key=lambda l: l.sequence).filtered(lambda l: l.display_type == 'product')" t-as="line">
                                     <t t-if="line.display_type == 'product'">
                                         <t t-set="line_num" t-value="line_num + 1"/>
                                         <!-- Calcular IVA%, FTE%, ICA% por línea -->
@@ -431,7 +431,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <t t-foreach="o.invoice_line_ids.sorted(key=lambda l: l.sequence)" t-as="line">
+                                        <t t-foreach="o.invoice_line_ids.sorted(key=lambda l: l.sequence).filtered(lambda l: l.display_type == 'product')" t-as="line">
                                             <t t-if="line.display_type == 'product'">
                                                 <tr>
                                                     <td style="border: 1px solid black; padding: 3px;"><span t-field="line.name"/></td>
