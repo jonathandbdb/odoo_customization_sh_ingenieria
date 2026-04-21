@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "sh_l10n_co_edi_mail_template",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.0.1",
     "summary": "Plantilla de correo personalizada para documentos electrónicos Colombia (SH Ingeniería SAS)",
     "description": """
 Sobrescribe la plantilla de correo utilizada por Odoo para el envío de documentos
