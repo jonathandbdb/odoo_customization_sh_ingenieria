@@ -8,16 +8,11 @@ class ResPartner(models.Model):
     def _l10n_co_dian_update_data(self, company):
         """
         Extiende el método original para evitar actualizar el campo email
-        cuando el contacto es de tipo dirección de facturación (type = 'invoice').
+        en cualquier tipo de contacto.
 
-        Para esos contactos se sigue consultando la DIAN y se actualizan todos
-        los demás campos (ej: name), pero se descarta el email para evitar que
-        sea sobreescrito antes de que Odoo envíe el correo de la factura.
+        Se sigue consultando la DIAN y se actualizan todos los demás campos,
+        pero se descarta el email para evitar que sea sobreescrito.
         """
-        if self.type != 'invoice':
-            return super()._l10n_co_dian_update_data(company)
-
-        # Para direcciones de facturación: actualizar todo excepto el email.
         self.ensure_one()
         data = self._l10n_co_dian_call_get_acquirer({
             'identification_type': self._l10n_co_edi_get_carvajal_code_for_identification_type(),
