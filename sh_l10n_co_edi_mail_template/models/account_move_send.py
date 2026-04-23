@@ -18,7 +18,16 @@ class AccountMoveSend(models.AbstractModel):
         """
         Indica si la factura pertenece al flujo DIAN (Colombia) y ya tiene
         el documento firmado aceptado disponible para empaquetar junto al PDF.
+
+        Se exige además que ``move.name`` esté asignado (no ``False`` ni ``"/"``)
+        porque ``_l10n_co_dian_get_attached_document_filename`` aplica un
+        ``re.sub`` sobre ``self.name`` y falla con ``TypeError`` si el campo es
+        ``False`` (caso típico en facturas recién importadas vía XML sin postear).
         """
+        # Validación defensiva: sin nombre secuencial válido no hay nombre de ZIP posible
+        move_name = move.name
+        if not move_name or not isinstance(move_name, str) or move_name == "/":
+            return False
         return (
             getattr(move, "l10n_co_dian_is_enabled", False)
             and bool(move.l10n_co_dian_attachment_id)
